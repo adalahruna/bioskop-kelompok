@@ -1,3 +1,5 @@
+Dart
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -17,15 +19,18 @@ class MoviePosterCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 130, // Lebar poster
-        margin: const EdgeInsets.symmetric(horizontal: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
           color: AppTheme.secondaryBackground,
           borderRadius: BorderRadius.circular(12),
           image: DecorationImage(
             image: NetworkImage(posterUrl),
             fit: BoxFit.cover,
-            onError: (exception, stackTrace) =>
-                const Icon(Icons.error_outline, color: AppTheme.primaryGold),
+            // Tampilkan error jika gambar gagal dimuat
+            onError: (exception, stackTrace) => const Icon(
+              Icons.error_outline,
+              color: AppTheme.primaryGold,
+            ),
           ),
           boxShadow: [
             BoxShadow(
