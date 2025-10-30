@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'app/core/theme/app_theme.dart';
 import 'app/core/utils/app_pages.dart';
 import 'app/core/utils/app_routes.dart';
-
+//tes techa
 // Import Firebase
 import 'package:firebase_core/firebase_core.dart';
 // import 'package:firebase_auth/firebase_auth.dart'; // (Belum kita pakai di sini)
