@@ -1,5 +1,3 @@
-Dart
-
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -27,10 +25,8 @@ class MoviePosterCard extends StatelessWidget {
             image: NetworkImage(posterUrl),
             fit: BoxFit.cover,
             // Tampilkan error jika gambar gagal dimuat
-            onError: (exception, stackTrace) => const Icon(
-              Icons.error_outline,
-              color: AppTheme.primaryGold,
-            ),
+            onError: (exception, stackTrace) =>
+                const Icon(Icons.error_outline, color: AppTheme.primaryGold),
           ),
           boxShadow: [
             BoxShadow(

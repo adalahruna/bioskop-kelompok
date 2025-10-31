@@ -1,13 +1,12 @@
-Dart
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:carousel_slider/carousel_slider.dart'; // <-- IMPORT BARU
-import '../../core/theme/app_theme.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import '../../core/theme/app_theme.dart'; // Path: ../../
+import '../../core/utils/app_routes.dart'; // Path: ../../
 import 'home_controller.dart';
-import '../widgets/movie_poster_card.dart'; // <-- IMPORT BARU (Widget Poster)
-import '../../data/models/movie_model.dart'; // <-- IMPORT BARU (Model)
+import '../widgets/movie_poster_card.dart'; // Path: ../
+import '../../data/models/movie_model.dart'; // Path: ../../
 
 class HomePage extends GetView<HomeController> {
   const HomePage({super.key});
@@ -27,17 +26,12 @@ class HomePage extends GetView<HomeController> {
         actions: [
           // Tombol Search
           IconButton(
-            onPressed: () { 
-              Get.snackbar("Fitur", "Fitur Pencarian akan segera hadir!");
-            },
+            onPressed: controller.navigateToSearch,
             icon: const Icon(Icons.search, color: AppTheme.primaryGold),
           ),
-          // Tombol Profil (Ganti Logout jadi Profil)
+          // Tombol Profil
           IconButton(
-            onPressed: () { 
-              // Nanti arahkan ke AppRoutes.profile
-              Get.snackbar("Fitur", "Halaman Profil akan segera hadir!");
-            },
+            onPressed: controller.navigateToProfile,
             icon: const Icon(Icons.person_outline, color: AppTheme.primaryGold),
           ),
           const SizedBox(width: 8),
@@ -50,7 +44,7 @@ class HomePage extends GetView<HomeController> {
             child: CircularProgressIndicator(color: AppTheme.primaryGold),
           );
         }
-        
+
         // Gunakan SingleChildScrollView agar bisa di-scroll
         return SingleChildScrollView(
           child: Column(
@@ -58,25 +52,25 @@ class HomePage extends GetView<HomeController> {
             children: [
               // 1. Carousel Poster
               _buildCarousel(controller.carouselMovies),
-              
+
               const SizedBox(height: 24),
-              
+
               // 2. Filter Genre
               _buildSectionTitle("Categories"),
               _buildGenreFilter(),
-              
+
               const SizedBox(height: 24),
-              
+
               // 3. Daftar "Now Playing"
               _buildSectionTitle("Now Playing"),
               _buildMovieList(controller.nowPlayingMovies),
-              
+
               const SizedBox(height: 24),
 
               // 4. Daftar "Coming Soon"
               _buildSectionTitle("Coming Soon"),
               _buildMovieList(controller.upcomingMovies),
-              
+
               const SizedBox(height: 30),
             ],
           ),
@@ -109,7 +103,7 @@ class HomePage extends GetView<HomeController> {
         child: const Center(child: Text("No movies to display")),
       );
     }
-    
+
     return CarouselSlider(
       options: CarouselOptions(
         height: 220.0,
@@ -157,16 +151,25 @@ class HomePage extends GetView<HomeController> {
               onTap: () => controller.changeGenre(genre),
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryGold : AppTheme.secondaryBackground,
+                  color: isSelected
+                      ? AppTheme.primaryGold
+                      : AppTheme.secondaryBackground,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   genre,
                   style: GoogleFonts.poppins(
-                    color: isSelected ? AppTheme.darkText : AppTheme.lightText.withOpacity(0.7),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? AppTheme.darkText
+                        : AppTheme.lightText.withOpacity(0.7),
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
               ),
@@ -191,13 +194,12 @@ class HomePage extends GetView<HomeController> {
           return MoviePosterCard(
             posterUrl: movie.fullPosterPath, // Ambil poster
             onTap: () {
-              // Nanti kita kirim ID film ke halaman detail
-              // Get.toNamed(AppRoutes.movieDetail, arguments: movie.id);
-              Get.snackbar("Navigasi", "Akan pindah ke halaman detail: ${movie.title}");
+              // Kirim ID film ke halaman detail
+              Get.toNamed(AppRoutes.movieDetail, arguments: movie.id);
             },
           );
         },
-      ),
-    );
-  }
+      ),
+    );
+  }
 }

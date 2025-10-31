@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/movie_model.dart';
+import '../models/movie_detail_model.dart'; // <-- IMPORT BARU
 import '../../core/utils/api_constants.dart';
 
 class TmdbProvider {
@@ -7,26 +8,19 @@ class TmdbProvider {
   final String _apiKey = ApiConstants.tmdbApiKey;
   final String _baseUrl = ApiConstants.tmdbBaseUrl;
 
-  // Fungsi untuk mengambil data film
+  // Fungsi untuk mengambil list film (tetap sama)
   Future<List<MovieModel>> _fetchMovies(String endpoint) async {
+    // ... (kode ini tetap sama, tidak perlu diubah)
     try {
       final response = await _dio.get(
         '$_baseUrl/$endpoint',
-        queryParameters: {
-          'api_key': _apiKey,
-          'language': 'en-US',
-          'page': 1,
-        },
+        queryParameters: {'api_key': _apiKey, 'language': 'en-US', 'page': 1},
       );
-
- // API TMDB mengembalikan list film di dalam key 'results'
       final List results = response.data['results'];
-      
-      // Ubah setiap item di list JSON menjadi MovieModel
-      return results.map((movieJson) => MovieModel.fromJson(movieJson)).toList();
-      
+      return results
+          .map((movieJson) => MovieModel.fromJson(movieJson))
+          .toList();
     } on DioException catch (e) {
-      // Tangani error
       print("DioError: $e");
       return [];
     } catch (e) {
@@ -35,15 +29,33 @@ class TmdbProvider {
     }
   }
 
- // Ambil film yang sedang tayang
   Future<List<MovieModel>> getNowPlayingMovies() async {
     return _fetchMovies('movie/now_playing');
   }
 
-  // Ambil film yang akan datang
   Future<List<MovieModel>> getUpcomingMovies() async {
     return _fetchMovies('movie/upcoming');
   }
-  
-  // (Nanti kita bisa tambah fungsi getGenres, getMovieDetail, dll di sini)
+
+  // --- FUNGSI BARU DI BAWAH INI ---
+
+  // Ambil detail satu film berdasarkan ID-nya
+  Future<MovieDetailModel?> getMovieDetail(int movieId) async {
+    try {
+      final response = await _dio.get(
+        '$_baseUrl/movie/$movieId', // Endpoint-nya berbeda
+        queryParameters: {'api_key': _apiKey, 'language': 'en-US'},
+      );
+
+      // Datanya adalah satu objek JSON (bukan list)
+      // Kita ubah menjadi MovieDetailModel
+      return MovieDetailModel.fromJson(response.data);
+    } on DioException catch (e) {
+      print("DioError fetching detail: $e");
+      return null;
+    } catch (e) {
+      print("Error fetching detail: $e");
+      return null;
+    }
+  }
 }

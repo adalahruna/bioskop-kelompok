@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/app_routes.dart';
 import 'movie_detail_controller.dart';
+
+// --- INI TAMBAHANNYA ---
+// Import model Anda, yang di dalamnya ada 'GenreModel'
+import '../../data/models/movie_detail_model.dart';
 
 class MovieDetailPage extends GetView<MovieDetailController> {
   const MovieDetailPage({super.key});
@@ -19,18 +22,27 @@ class MovieDetailPage extends GetView<MovieDetailController> {
           );
         }
 
-        // Ambil data (dummy) dari controller
-        final movie = controller.dummyMovie;
+        final movie = controller.movie.value;
+        if (movie == null) {
+          return const Center(
+            child: Text(
+              "Detail film tidak ditemukan.",
+              style: TextStyle(color: AppTheme.lightText),
+            ),
+          );
+        }
 
+        // Stack untuk menumpuk Tombol "Get Tickets" di atas konten
         return Stack(
           children: [
             // Konten utama yang bisa di-scroll
             CustomScrollView(
               slivers: [
                 // 1. App Bar yang berisi gambar backdrop
-                _buildSliverAppBar(movie),
-
-                // 2. Konten di bawah gambar
+                _buildSliverAppBar(
+                  movie,
+                ), // Tipe data sudah jelas (MovieDetailModel)
+                // 2. Konten di bawah gambar (Judul, Sinopsis, dll)
                 SliverList(
                   delegate: SliverChildListDelegate([
                     Padding(
@@ -40,7 +52,7 @@ class MovieDetailPage extends GetView<MovieDetailController> {
                         children: [
                           // Judul Film
                           Text(
-                            movie['title'].toString(),
+                            movie.title,
                             style: GoogleFonts.playfairDisplay(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
@@ -50,12 +62,12 @@ class MovieDetailPage extends GetView<MovieDetailController> {
                           const SizedBox(height: 12),
 
                           // Info Rating, Durasi, Rilis
-                          _buildMovieInfo(movie),
+                          _buildMovieInfo(movie), // Tipe data sudah jelas
 
                           const SizedBox(height: 24),
 
                           // Genre Tags
-                          _buildGenreTags(movie['genres'] as List<dynamic>),
+                          _buildGenreTags(movie.genres),
 
                           const SizedBox(height: 24),
 
@@ -70,7 +82,7 @@ class MovieDetailPage extends GetView<MovieDetailController> {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            movie['overview'].toString(),
+                            movie.overview,
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               color: AppTheme.lightText.withOpacity(0.8),
@@ -78,7 +90,7 @@ class MovieDetailPage extends GetView<MovieDetailController> {
                             ),
                           ),
 
-                          // Beri jarak agar tidak tertutup tombol
+                          // Beri jarak agar tidak tertutup tombol (penting!)
                           const SizedBox(height: 120),
                         ],
                       ),
@@ -99,8 +111,9 @@ class MovieDetailPage extends GetView<MovieDetailController> {
     );
   }
 
-  // Widget untuk Sliver App Bar (Gambar Backdrop)
-  Widget _buildSliverAppBar(RxMap<String, Object> movie) {
+  // --- PERBAIKAN DI SINI ---
+  // Beri tipe data 'MovieDetailModel' pada parameter 'movie'
+  Widget _buildSliverAppBar(MovieDetailModel movie) {
     return SliverAppBar(
       expandedHeight: 300.0, // Tinggi gambar saat full
       pinned: true, // App bar tetap terlihat saat scroll
@@ -113,8 +126,8 @@ class MovieDetailPage extends GetView<MovieDetailController> {
           fit: StackFit.expand,
           children: [
             // Gambar Backdrop
-            Image.network(movie['backdrop_path'].toString(), fit: BoxFit.cover),
-            // Gradient hitam di bawah gambar
+            Image.network(movie.fullBackdropPath, fit: BoxFit.cover),
+            // Gradient hitam di bawah gambar agar menyatu
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -135,15 +148,16 @@ class MovieDetailPage extends GetView<MovieDetailController> {
     );
   }
 
-  // Widget untuk Info (Rating, Durasi, Tanggal)
-  Widget _buildMovieInfo(RxMap<String, Object> movie) {
+  // --- PERBAIKAN DI SINI ---
+  // Beri tipe data 'MovieDetailModel' pada parameter 'movie'
+  Widget _buildMovieInfo(MovieDetailModel movie) {
     return Row(
       children: [
         // Rating
         const Icon(Icons.star, color: AppTheme.primaryGold, size: 20),
         const SizedBox(width: 4),
         Text(
-          movie['vote_average'].toString(),
+          movie.voteAverage.toStringAsFixed(1), // 1 angka desimal
           style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(width: 16),
@@ -152,12 +166,12 @@ class MovieDetailPage extends GetView<MovieDetailController> {
         const Icon(Icons.timer_outlined, color: AppTheme.primaryGold, size: 20),
         const SizedBox(width: 4),
         Text(
-          "${movie['runtime']} minutes",
+          movie.formattedRuntime, // "1h 45m"
           style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(width: 16),
 
-        // Tanggal Rilis
+        // Tahun Rilis
         const Icon(
           Icons.calendar_today_outlined,
           color: AppTheme.primaryGold,
@@ -165,7 +179,7 @@ class MovieDetailPage extends GetView<MovieDetailController> {
         ),
         const SizedBox(width: 4),
         Text(
-          (movie['release_date'] as String).split('-')[0], // Ambil tahun saja
+          movie.releaseYear, // "2024"
           style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
         ),
       ],
@@ -173,14 +187,16 @@ class MovieDetailPage extends GetView<MovieDetailController> {
   }
 
   // Widget untuk Genre
-  Widget _buildGenreTags(List<dynamic> genres) {
+  Widget _buildGenreTags(List<GenreModel> genres) {
+    // <- 'GenreModel' sekarang dikenali
     return Wrap(
+      // Wrap agar bisa pindah baris jika genre banyak
       spacing: 8.0,
       runSpacing: 4.0,
       children: genres.map((genre) {
         return Chip(
           label: Text(
-            genre.toString(),
+            genre.name,
             style: GoogleFonts.poppins(
               color: AppTheme.darkText,
               fontWeight: FontWeight.w600,
@@ -200,6 +216,7 @@ class MovieDetailPage extends GetView<MovieDetailController> {
       child: Container(
         height: 100,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        // Gradient agar tidak menutupi konten secara kasar
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -215,10 +232,8 @@ class MovieDetailPage extends GetView<MovieDetailController> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {
-              // Get.toNamed(AppRoutes.booking, arguments: controller.movieId);
-              Get.snackbar("Info", "Akan pindah ke halaman pemilihan kursi");
-            },
+            onPressed:
+                controller.navigateToBooking, // Panggil fungsi controller
             child: const Text("Get Tickets"),
           ),
         ),

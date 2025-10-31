@@ -1,23 +1,23 @@
 import 'package:get/get.dart';
 
-// Import file-file login
+// ... (import login, register, home)
 import '../../modules/auth/login/login_binding.dart';
 import '../../modules/auth/login/login_page.dart';
-
-// Import file-file register
 import '../../modules/auth/register/register_binding.dart';
 import '../../modules/auth/register/register_page.dart';
-
-// Import file-file home (BARU)
 import '../../modules/home/home_binding.dart';
 import '../../modules/home/home_page.dart';
+
+// --- IMPORT BARU ---
+import '../../modules/detail/movie_detail_binding.dart';
+import '../../modules/detail/movie_detail_page.dart';
 
 // Import file routes
 import 'app_routes.dart';
 
 class AppPages {
   static final List<GetPage> pages = [
-    // Rute Autentikasi
+    // ... (GetPage login, register, home)
     GetPage(
       name: AppRoutes.login,
       page: () => const LoginPage(),
@@ -29,13 +29,19 @@ class AppPages {
       binding: RegisterBinding(),
       transition: Transition.rightToLeft,
     ),
-
-    // Rute Home (BARU)
     GetPage(
       name: AppRoutes.home,
       page: () => const HomePage(),
       binding: HomeBinding(),
       transition: Transition.fadeIn,
+    ),
+
+    // --- GETPAGE BARU ---
+    GetPage(
+      name: AppRoutes.movieDetail,
+      page: () => const MovieDetailPage(),
+      binding: MovieDetailBinding(),
+      transition: Transition.rightToLeftWithFade,
     ),
   ];
 }
