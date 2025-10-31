@@ -29,10 +29,15 @@ class HomePage extends GetView<HomeController> {
             onPressed: controller.navigateToSearch,
             icon: const Icon(Icons.search, color: AppTheme.primaryGold),
           ),
-          // Tombol Profil
+
+          // --- INI PERUBAHANNYA ---
+          // Tombol Profil diubah jadi Tombol Logout
           IconButton(
-            onPressed: controller.navigateToProfile,
-            icon: const Icon(Icons.person_outline, color: AppTheme.primaryGold),
+            onPressed: controller.logout, // Panggil fungsi logout
+            icon: const Icon(
+              Icons.logout,
+              color: AppTheme.primaryGold,
+            ), // Ganti ikon
           ),
           const SizedBox(width: 8),
         ],
