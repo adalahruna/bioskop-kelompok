@@ -1,89 +1,101 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/utils/app_routes.dart'; // Path: ../../
+import 'package:flutter/material.dart';
+import '../../core/utils/app_routes.dart';
 import '../../data/models/movie_model.dart';
 import '../../data/providers/tmdb_provider.dart';
+import '../../data/models/food_model.dart'; // Import model makanan
 
 class HomeController extends GetxController {
-  // Dapatkan TmdbProvider yang sudah didaftarkan di binding
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Kita butuh provider lagi untuk ambil data trending
   final TmdbProvider _tmdbProvider = Get.find<TmdbProvider>();
 
-  // State untuk data film
-  final nowPlayingMovies = <MovieModel>[].obs;
-  final upcomingMovies = <MovieModel>[].obs;
-  final carouselMovies = <MovieModel>[].obs;
-
-  // State untuk UI
+  final userName = "Guest".obs;
   final isLoading = true.obs;
 
-  // (Data genre statis untuk UI filter)
-  final genres = [
-    'Action',
-    'Sci-Fi',
-    'Drama',
-    'Comedy',
-    'Horror',
-    'Animation',
+  // Data List untuk UI
+  final trendingMovies = <MovieModel>[].obs;
+  final popularFoods = <FoodModel>[].obs;
+
+  // Gambar Carousel Utama (Promo Statis)
+  final promoImages = [
+    "https://image.tmdb.org/t/p/w1280/8pjWz2lt2xRcLgKCFwL6E0aKsc.jpg",
+    "https://image.tmdb.org/t/p/w1280/qrGtVFBI1hoSJma8hdE3h4dy13s.jpg",
+    "https://image.tmdb.org/t/p/w1280/pRmF6VBsRnvWCb6tXWYnZa4JRock.jpg",
   ].obs;
-  final selectedGenre = 'Action'.obs;
 
   @override
   void onInit() {
     super.onInit();
-    fetchAllMovieData(); // Panggil API saat controller siap
+    _loadUserName();
+    _fetchDashboardData(); // Ambil data saat init
   }
 
-  void fetchAllMovieData() async {
+  void _loadUserName() {
+    User? user = _auth.currentUser;
+    if (user != null && user.email != null) {
+      userName.value = user.email!.split('@')[0];
+    }
+  }
+
+  void _fetchDashboardData() async {
     try {
       isLoading.value = true;
 
-      // Panggil kedua API secara bersamaan
-      final results = await Future.wait([
-        _tmdbProvider.getNowPlayingMovies(),
-        _tmdbProvider.getUpcomingMovies(),
-      ]);
+      // 1. Ambil Film Trending (Now Playing) - Cuma ambil 5 teratas
+      final movies = await _tmdbProvider.getNowPlayingMovies();
+      trendingMovies.value = movies.take(5).toList();
 
-      final nowPlayingResult = results[0];
-      final upcomingResult = results[1];
-
-      // Isi data untuk carousel (ambil 5 film pertama dari 'now playing')
-      carouselMovies.value = nowPlayingResult.take(5).toList();
-
-      // Isi data untuk list
-      nowPlayingMovies.value = nowPlayingResult;
-      upcomingMovies.value = upcomingResult;
+      // 2. Isi Data Dummy Makanan Populer
+      popularFoods.value = [
+        FoodModel(
+          name: "Caramel Popcorn",
+          price: "Rp 45.000",
+          category: "Snack",
+          image:
+              "https://images.unsplash.com/photo-1578849278619-e73505e9610f?q=80&w=500&auto=format&fit=crop",
+        ),
+        FoodModel(
+          name: "Coca Cola Large",
+          price: "Rp 25.000",
+          category: "Drink",
+          image:
+              "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop",
+        ),
+        FoodModel(
+          name: "Nachos Cheese",
+          price: "Rp 50.000",
+          category: "Snack",
+          image:
+              "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=500&auto=format&fit=crop",
+        ),
+      ];
     } catch (e) {
-      Get.snackbar("Error", "Gagal memuat data film: ${e.toString()}");
+      print("Error fetching dashboard data: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Fungsi filter (dummy, hanya ganti state)
-  void changeGenre(String genre) {
-    selectedGenre.value = genre;
-    // Nanti di sini Anda bisa panggil API lagi dengan filter genre
-    // _tmdbProvider.getMoviesByGenre(genreId);
+  // --- NAVIGASI ---
+  void navigateToMovies() => Get.toNamed(AppRoutes.movies);
+  void navigateToFood() => Get.toNamed(AppRoutes.food);
+  void navigateToProfile() => Get.toNamed(AppRoutes.profile);
+
+  // Navigasi Spesifik ke Detail Film
+  void goToMovieDetail(int id) {
+    Get.toNamed(AppRoutes.movieDetail, arguments: id);
+  }
+
+  void showFeatureNotReady(String title) {
     Get.snackbar(
-      "Filter",
-      "Menampilkan genre $genre (logic filter belum diimplementasi)",
+      "Info",
+      "$title is under development",
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(20),
+      backgroundColor: Colors.black.withOpacity(0.8),
+      colorText: Colors.white,
     );
-  }
-
-  void logout() async {
-    await FirebaseAuth.instance.signOut();
-    Get.offAllNamed(AppRoutes.login);
-  }
-
-  // --- INI FUNGSI YANG DIPANGGIL TOMBOL (YANG BARU) ---
-  void navigateToProfile() {
-    // Nanti kita arahkan ke halaman profil
-    // Get.toNamed(AppRoutes.profile);
-    Get.toNamed(AppRoutes.profile);
-  }
-
-  // --- INI FUNGSI YANG DIPANGGIL TOMBOL (YANG BARU) ---
-  void navigateToSearch() {
-    Get.snackbar("Fitur", "Fitur Pencarian akan segera hadir!");
   }
 }
