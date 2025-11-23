@@ -79,7 +79,7 @@ class HomeController extends GetxController {
   void navigateToProfile() {
     // Nanti kita arahkan ke halaman profil
     // Get.toNamed(AppRoutes.profile);
-    Get.snackbar("Fitur", "Halaman Profil akan segera hadir!");
+    Get.toNamed(AppRoutes.profile);
   }
 
   // --- INI FUNGSI YANG DIPANGGIL TOMBOL (YANG BARU) ---

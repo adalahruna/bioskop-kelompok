@@ -33,9 +33,9 @@ class HomePage extends GetView<HomeController> {
           // --- INI PERUBAHANNYA ---
           // Tombol Profil diubah jadi Tombol Logout
           IconButton(
-            onPressed: controller.logout, // Panggil fungsi logout
+            onPressed: controller.navigateToProfile, // Panggil fungsi logout
             icon: const Icon(
-              Icons.logout,
+              Icons.person_outline,
               color: AppTheme.primaryGold,
             ), // Ganti ikon
           ),

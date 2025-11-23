@@ -13,6 +13,8 @@ import '../../modules/detail/movie_detail_page.dart';
 // --- IMPORT BARU ---
 import '../../modules/booking/booking_binding.dart';
 import '../../modules/booking/booking_page.dart';
+import '../../modules/profile/profile_binding.dart'; // Import baru
+import '../../modules/profile/profile_page.dart';
 
 import 'app_routes.dart';
 
@@ -49,6 +51,12 @@ class AppPages {
       page: () => const BookingPage(),
       binding: BookingBinding(),
       transition: Transition.downToUp, // Transisi dari bawah ke atas (keren)
+    ),
+    GetPage(
+      name: AppRoutes.profile,
+      page: () => const ProfilePage(),
+      binding: ProfileBinding(),
+      transition: Transition.fadeIn,
     ),
   ];
 }
