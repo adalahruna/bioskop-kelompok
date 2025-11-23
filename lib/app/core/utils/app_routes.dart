@@ -6,8 +6,9 @@ class AppRoutes {
   static const String booking = '/booking';
   static const String profile = '/profile';
 
-  // --- RUTE BARU ---
-  static const String movies =
-      '/movies'; // Halaman List Film (Pindahan dari Home lama)
-  static const String food = '/food'; // Halaman Pesan Makan
+  static const String movies = '/movies';
+  static const String food = '/food';
+
+  // --- RUTE BARU UNTUK CART ---
+  static const String cart = '/cart';
 }
