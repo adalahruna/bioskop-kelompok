@@ -72,12 +72,78 @@ class LoginPage extends GetView<LoginController> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
+                    // --- UBAH BAGIAN INI ---
                     onPressed: () {
-                      Get.snackbar(
-                        "Fitur",
-                        "Fitur Lupa Password akan segera hadir!",
+                      // 1. Siapkan controller sementara untuk dialog
+                      // Kita isi default-nya dengan apa yang sudah diketik user di halaman login
+                      final resetEmailController = TextEditingController(
+                        text: controller.emailController.text,
+                      );
+
+                      // 2. Tampilkan Dialog Input
+                      Get.defaultDialog(
+                        title: "Reset Password",
+                        titleStyle: GoogleFonts.playfairDisplay(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryGold, // Sesuaikan warna judul
+                        ),
+                        backgroundColor: AppTheme.secondaryBackground, // Background gelap
+                        radius: 16,
+                        content: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
+                            children: [
+                              Text(
+                                "Masukkan email Anda untuk menerima link reset password.",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12, 
+                                  color: Colors.grey
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: resetEmailController,
+                                keyboardType: TextInputType.emailAddress,
+                                style: const TextStyle(color: AppTheme.lightText),
+                                decoration: const InputDecoration(
+                                  labelText: "Email",
+                                  prefixIcon: Icon(
+                                    Icons.email_outlined,
+                                    color: AppTheme.primaryGold,
+                                  ),
+                                  // Gunakan style input yang sama dengan tema
+                                  filled: true,
+                                  fillColor: Colors.black26, 
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Tombol Kirim
+                        confirm: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryGold,
+                            foregroundColor: AppTheme.darkText,
+                          ),
+                          onPressed: () {
+                            controller.sendPasswordResetEmail(
+                              resetEmailController.text.trim(),
+                            );
+                          },
+                          child: const Text("Kirim Link"),
+                        ),
+                        // Tombol Batal
+                        cancel: TextButton(
+                          onPressed: () => Get.back(),
+                          child: const Text(
+                            "Batal", 
+                            style: TextStyle(color: Colors.grey)
+                          ),
+                        ),
                       );
                     },
+                    // -----------------------
                     child: Text(
                       "Forgot Password?",
                       style: GoogleFonts.poppins(color: AppTheme.primaryGold),
