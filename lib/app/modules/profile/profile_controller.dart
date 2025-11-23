@@ -9,60 +9,73 @@ class ProfileController extends GetxController {
 
   // Data User
   final userEmail = "".obs;
-  final userName = "User".obs; // Nanti bisa ambil dari Firestore 'users'
+  final userName = "Guest".obs;
 
-  // Data Tiket
+  // Data History
   final myTickets = <Map<String, dynamic>>[].obs;
+  final myFoodOrders = <Map<String, dynamic>>[].obs; // History Makanan
+
   final isLoading = true.obs;
 
   @override
   void onInit() {
     super.onInit();
     loadUserProfile();
-    loadMyTickets();
+    loadHistory();
   }
 
   void loadUserProfile() {
     User? user = _auth.currentUser;
     if (user != null) {
       userEmail.value = user.email ?? "";
-      // Optional: Ambil nama dari koleksi 'users' berdasarkan UID
+
+      // Coba ambil nama dari Firestore
       _firestore.collection('users').doc(user.uid).get().then((doc) {
-        if (doc.exists) {
-          userName.value = doc.data()?['name'] ?? "User";
+        if (doc.exists && doc.data() != null) {
+          userName.value = doc.data()!['name'] ?? "User";
+        } else {
+          // Fallback: Ambil nama dari email
+          userName.value = user.email!.split('@')[0];
         }
       });
     }
   }
 
-  void loadMyTickets() async {
+  void loadHistory() async {
     User? user = _auth.currentUser;
     if (user == null) return;
 
     try {
       isLoading.value = true;
-      // Query ke Firestore: Ambil tiket yang userId-nya sama dengan user login
-      // Order by bookingDate descending (terbaru di atas)
-      final querySnapshot = await _firestore
+
+      // 1. Ambil Tiket Film (Terbaru di atas)
+      // Note: Pastikan Index Firestore sudah dibuat jika query ini error
+      final ticketSnapshot = await _firestore
           .collection('tickets')
           .where('userId', isEqualTo: user.uid)
           .orderBy('bookingDate', descending: true)
           .get();
 
-      final List<Map<String, dynamic>> tickets = [];
+      myTickets.value = ticketSnapshot.docs.map((doc) {
+        var data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
 
-      for (var doc in querySnapshot.docs) {
-        // Masukkan data tiket + ID dokumennya
-        Map<String, dynamic> data = doc.data();
-        data['ticketId'] = doc.id;
-        tickets.add(data);
-      }
+      // 2. Ambil Pesanan Makanan (Terbaru di atas)
+      final orderSnapshot = await _firestore
+          .collection('orders')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('orderDate', descending: true)
+          .get();
 
-      myTickets.value = tickets;
+      myFoodOrders.value = orderSnapshot.docs.map((doc) {
+        var data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
     } catch (e) {
-      print("Error loading tickets: $e");
-      // Note: Jika error permission/index, pastikan rule Firestore benar
-      // atau field 'bookingDate' sudah di-index jika query kompleks
+      print("Error loading history: $e");
     } finally {
       isLoading.value = false;
     }
