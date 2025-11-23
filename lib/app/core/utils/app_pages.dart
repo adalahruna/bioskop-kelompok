@@ -7,17 +7,18 @@ import '../../modules/auth/register/register_binding.dart';
 import '../../modules/auth/register/register_page.dart';
 import '../../modules/home/home_binding.dart';
 import '../../modules/home/home_page.dart';
-
-// --- IMPORT BARU ---
 import '../../modules/detail/movie_detail_binding.dart';
 import '../../modules/detail/movie_detail_page.dart';
 
-// Import file routes
+// --- IMPORT BARU ---
+import '../../modules/booking/booking_binding.dart';
+import '../../modules/booking/booking_page.dart';
+
 import 'app_routes.dart';
 
 class AppPages {
   static final List<GetPage> pages = [
-    // ... (GetPage login, register, home)
+    // ... (Login, Register, Home, Detail tetap sama)
     GetPage(
       name: AppRoutes.login,
       page: () => const LoginPage(),
@@ -35,13 +36,19 @@ class AppPages {
       binding: HomeBinding(),
       transition: Transition.fadeIn,
     ),
-
-    // --- GETPAGE BARU ---
     GetPage(
       name: AppRoutes.movieDetail,
       page: () => const MovieDetailPage(),
       binding: MovieDetailBinding(),
       transition: Transition.rightToLeftWithFade,
+    ),
+
+    // --- GETPAGE BARU ---
+    GetPage(
+      name: AppRoutes.booking,
+      page: () => const BookingPage(),
+      binding: BookingBinding(),
+      transition: Transition.downToUp, // Transisi dari bawah ke atas (keren)
     ),
   ];
 }

@@ -1,22 +1,17 @@
 import 'package:get/get.dart';
 import '../../data/models/movie_detail_model.dart';
 import '../../data/providers/tmdb_provider.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/utils/app_routes.dart'; // Import Routes
 
 class MovieDetailController extends GetxController {
   final TmdbProvider _tmdbProvider = Get.find<TmdbProvider>();
-
-  // Variabel untuk menampung ID film yang dikirim dari HomePage
   late final int movieId;
-
-  // State untuk data film detail
   final movie = Rx<MovieDetailModel?>(null);
   final isLoading = true.obs;
 
   @override
   void onInit() {
     super.onInit();
-    // Ambil movieId yang dikirim sebagai 'arguments'
     movieId = Get.arguments as int;
     fetchMovieDetail();
   }
@@ -37,17 +32,19 @@ class MovieDetailController extends GetxController {
     }
   }
 
+  // --- UPDATE FUNGSI INI ---
   void navigateToBooking() {
-    // Nanti kita arahkan ke halaman booking
-    // Get.toNamed(AppRoutes.booking, arguments: movieId);
-    Get.snackbar(
-      "Fitur",
-      "Halaman booking untuk ${movie.value?.title} akan segera hadir!",
-      backgroundColor: AppTheme.primaryGold, // (Perlu import app_theme)
-      colorText: AppTheme.darkText, // (Perlu import app_theme)
+    if (movie.value == null) return;
+
+    // Kita kirim Map berisi data lengkap, bukan cuma ID
+    Get.toNamed(
+      AppRoutes.booking,
+      arguments: {
+        'id': movie.value!.id,
+        'title': movie.value!.title,
+        'poster': movie.value!.fullPosterPath,
+        'backdrop': movie.value!.fullBackdropPath,
+      },
     );
   }
 }
-
-// Catatan: Jika AppTheme error, tambahkan import ini di atas:
-// import '../../core/theme/app_theme.dart';
