@@ -8,7 +8,7 @@ class AppRoutes {
 
   static const String movies = '/movies';
   static const String food = '/food';
-
-  // --- RUTE BARU UNTUK CART ---
   static const String cart = '/cart';
+  static const String community = '/community';
+  static const String rentals = '/rentals';
 }

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/app_routes.dart'; // Import untuk navigasi langsung
 import 'home_controller.dart';
 import '../widgets/movie_poster_card.dart';
 import '../../data/models/movie_model.dart';
@@ -29,7 +30,7 @@ class HomePage extends GetView<HomeController> {
 
               const SizedBox(height: 30),
 
-              // 3. Menu Bar (Tombol Kecil Minimalis)
+              // 3. Menu Grid (Tombol Kategori)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Text(
@@ -42,6 +43,8 @@ class HomePage extends GetView<HomeController> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Menu Baris
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
@@ -57,15 +60,17 @@ class HomePage extends GetView<HomeController> {
                       label: "Dining",
                       onTap: controller.navigateToFood,
                     ),
+                    // Navigasi langsung ke Community
                     _buildCompactMenuBtn(
-                      icon: Icons.local_activity_outlined,
-                      label: "Events",
-                      onTap: () => controller.showFeatureNotReady("Events"),
+                      icon: Icons.forum_outlined,
+                      label: "Community",
+                      onTap: () => Get.toNamed(AppRoutes.community),
                     ),
+                    // Navigasi langsung ke Rentals
                     _buildCompactMenuBtn(
-                      icon: Icons.card_giftcard_outlined,
-                      label: "Offers",
-                      onTap: () => controller.showFeatureNotReady("Offers"),
+                      icon: Icons.movie_filter_outlined,
+                      label: "Rentals",
+                      onTap: () => Get.toNamed(AppRoutes.rentals),
                     ),
                   ],
                 ),
@@ -73,7 +78,7 @@ class HomePage extends GetView<HomeController> {
 
               const SizedBox(height: 30),
 
-              // 4. Trending Movies (List Horizontal)
+              // 4. Trending Movies (List Horizontal dari API)
               _buildSectionHeader(
                 "Trending Now",
                 () => controller.navigateToMovies(),
@@ -82,7 +87,7 @@ class HomePage extends GetView<HomeController> {
 
               const SizedBox(height: 30),
 
-              // 5. Popular Food (List Horizontal)
+              // 5. Popular Food (List Horizontal Dummy)
               _buildSectionHeader(
                 "Best Sellers",
                 () => controller.navigateToFood(),
@@ -198,6 +203,15 @@ class HomePage extends GetView<HomeController> {
                         Colors.black.withOpacity(0.8),
                       ],
                       stops: const [0.6, 1.0],
+                    ),
+                  ),
+                  alignment: Alignment.bottomLeft,
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    "Special Promo Today!",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -341,7 +355,7 @@ class HomePage extends GetView<HomeController> {
 
   Widget _buildPopularFoodList() {
     return SizedBox(
-      height: 160, // Tinggi area list makanan
+      height: 160,
       child: Obx(() {
         return ListView.builder(
           scrollDirection: Axis.horizontal,
@@ -358,7 +372,7 @@ class HomePage extends GetView<HomeController> {
 
   Widget _buildFoodCard(FoodModel food) {
     return GestureDetector(
-      onTap: controller.navigateToFood, // Masuk ke menu makanan
+      onTap: controller.navigateToFood,
       child: Container(
         width: 240,
         margin: const EdgeInsets.only(right: 16),

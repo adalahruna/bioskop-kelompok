@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import '../../core/utils/app_routes.dart';
 import '../../data/models/movie_model.dart';
 import '../../data/providers/tmdb_provider.dart';
-import '../../data/models/food_model.dart';
+import '../../data/models/food_model.dart'; // Import model makanan
 
 class HomeController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Kita butuh provider lagi untuk ambil data trending
   final TmdbProvider _tmdbProvider = Get.find<TmdbProvider>();
 
   final userName = "Guest".obs;
@@ -17,7 +18,7 @@ class HomeController extends GetxController {
   final trendingMovies = <MovieModel>[].obs;
   final popularFoods = <FoodModel>[].obs;
 
-  // Gambar Carousel Utama
+  // Gambar Carousel Utama (Promo Statis)
   final promoImages = [
     "https://image.tmdb.org/t/p/w1280/8pjWz2lt2xRcLgKCFwL6E0aKsc.jpg",
     "https://image.tmdb.org/t/p/w1280/qrGtVFBI1hoSJma8hdE3h4dy13s.jpg",
@@ -28,7 +29,7 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     _loadUserName();
-    _fetchDashboardData();
+    _fetchDashboardData(); // Ambil data saat init
   }
 
   void _loadUserName() {
@@ -42,12 +43,11 @@ class HomeController extends GetxController {
     try {
       isLoading.value = true;
 
-      // 1. Ambil Film Trending
+      // 1. Ambil Film Trending (Now Playing) - Cuma ambil 5 teratas
       final movies = await _tmdbProvider.getNowPlayingMovies();
       trendingMovies.value = movies.take(5).toList();
 
-      // 2. Isi Data Dummy Makanan Populer (DIPERBARUI)
-      // Sekarang sudah menyertakan 'rating' dan 'description'
+      // 2. Isi Data Dummy Makanan Populer
       popularFoods.value = [
         FoodModel(
           name: "Caramel Popcorn",
@@ -55,9 +55,8 @@ class HomeController extends GetxController {
           category: "Snack",
           image:
               "https://images.unsplash.com/photo-1578849278619-e73505e9610f?q=80&w=500&auto=format&fit=crop",
-          rating: 4.8, // Baru
-          description:
-              "Popcorn renyah dengan lapisan karamel manis premium.", // Baru
+          rating: 4.8,
+          description: "Popcorn renyah dengan lapisan karamel manis premium.",
         ),
         FoodModel(
           name: "Coca Cola Large",
@@ -65,8 +64,8 @@ class HomeController extends GetxController {
           category: "Drink",
           image:
               "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop",
-          rating: 4.9, // Baru
-          description: "Kesegaran soda klasik dalam ukuran besar.", // Baru
+          rating: 4.9,
+          description: "Kesegaran soda klasik dalam ukuran besar.",
         ),
         FoodModel(
           name: "Nachos Cheese",
@@ -74,9 +73,8 @@ class HomeController extends GetxController {
           category: "Snack",
           image:
               "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=500&auto=format&fit=crop",
-          rating: 4.5, // Baru
-          description:
-              "Keripik tortilla jagung dengan saus keju hangat.", // Baru
+          rating: 4.5,
+          description: "Keripik tortilla jagung dengan saus keju hangat.",
         ),
       ];
     } catch (e) {
@@ -91,6 +89,7 @@ class HomeController extends GetxController {
   void navigateToFood() => Get.toNamed(AppRoutes.food);
   void navigateToProfile() => Get.toNamed(AppRoutes.profile);
 
+  // Navigasi Spesifik ke Detail Film
   void goToMovieDetail(int id) {
     Get.toNamed(AppRoutes.movieDetail, arguments: id);
   }

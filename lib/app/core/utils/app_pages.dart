@@ -28,6 +28,13 @@ import '../../modules/movies/movies_page.dart';
 import '../../modules/food/food_page.dart';
 import '../../modules/food/cart_page.dart';
 
+// Import Community
+import '../../modules/community/community_page.dart';
+
+// --- IMPORT RENTALS ---
+import '../../modules/rentals/rentals_binding.dart';
+import '../../modules/rentals/rentals_page.dart';
+
 // Import Routes
 import 'app_routes.dart';
 
@@ -84,8 +91,22 @@ class AppPages {
     GetPage(
       name: AppRoutes.cart,
       page: () => const CartPage(),
-      // CartPage menggunakan controller yang sama dengan FoodPage
       transition: Transition.downToUp,
+    ),
+
+    // --- FEATURES: COMMUNITY ---
+    GetPage(
+      name: AppRoutes.community,
+      page: () => const CommunityPage(),
+      transition: Transition.rightToLeft,
+    ),
+
+    // --- FEATURES: RENTALS ---
+    GetPage(
+      name: AppRoutes.rentals,
+      page: () => const RentalsPage(),
+      binding: RentalsBinding(), // Pastikan ejaannya 'Binding' bukan 'Bindng'
+      transition: Transition.rightToLeft,
     ),
 
     // --- USER ---
