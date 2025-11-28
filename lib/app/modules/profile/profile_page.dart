@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Penting untuk Timestamp
 import '../../core/theme/app_theme.dart';
 import 'profile_controller.dart';
 
@@ -10,7 +11,7 @@ class ProfilePage extends GetView<ProfileController> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // 2 Tab: Movies & Dining
+      length: 3, // Ubah jadi 3 Tab (Movies, Dining, Rentals)
       child: Scaffold(
         appBar: AppBar(
           title: Text(
@@ -35,7 +36,7 @@ class ProfilePage extends GetView<ProfileController> {
 
             const SizedBox(height: 20),
 
-            // 2. Custom Tab Bar
+            // 2. Custom Tab Bar (Updated)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               height: 45,
@@ -51,12 +52,16 @@ class ProfilePage extends GetView<ProfileController> {
                 ),
                 labelColor: AppTheme.darkText,
                 unselectedLabelColor: Colors.grey,
-                labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                labelStyle: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
                 tabs: const [
                   Tab(text: "Movies"),
                   Tab(text: "Dining"),
+                  Tab(text: "Rentals"), // Tab Baru
                 ],
               ),
             ),
@@ -76,11 +81,9 @@ class ProfilePage extends GetView<ProfileController> {
 
                 return TabBarView(
                   children: [
-                    // Tab 1: List Tiket
-                    _buildTicketList(),
-
-                    // Tab 2: List Makanan
-                    _buildFoodOrderList(),
+                    _buildTicketList(), // Tab 1
+                    _buildFoodOrderList(), // Tab 2
+                    _buildRentalList(), // Tab 3 (Baru)
                   ],
                 );
               }),
@@ -109,7 +112,6 @@ class ProfilePage extends GetView<ProfileController> {
       ),
       child: Row(
         children: [
-          // Avatar
           Container(
             padding: const EdgeInsets.all(3),
             decoration: const BoxDecoration(
@@ -123,8 +125,6 @@ class ProfilePage extends GetView<ProfileController> {
             ),
           ),
           const SizedBox(width: 20),
-
-          // Info User
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +178,6 @@ class ProfilePage extends GetView<ProfileController> {
     );
   }
 
-  // --- LIST TIKET ---
   Widget _buildTicketList() {
     if (controller.myTickets.isEmpty) {
       return _buildEmptyState(
@@ -202,7 +201,6 @@ class ProfilePage extends GetView<ProfileController> {
           ),
           child: Row(
             children: [
-              // Poster Film
               ClipRRect(
                 borderRadius: const BorderRadius.horizontal(
                   left: Radius.circular(16),
@@ -216,8 +214,6 @@ class ProfilePage extends GetView<ProfileController> {
                       Container(width: 100, color: Colors.grey),
                 ),
               ),
-
-              // Info Tiket
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
@@ -272,7 +268,6 @@ class ProfilePage extends GetView<ProfileController> {
                         ],
                       ),
                       const Spacer(),
-                      // Badge Status
                       Align(
                         alignment: Alignment.bottomRight,
                         child: Container(
@@ -308,7 +303,6 @@ class ProfilePage extends GetView<ProfileController> {
     );
   }
 
-  // --- LIST MAKANAN ---
   Widget _buildFoodOrderList() {
     if (controller.myFoodOrders.isEmpty) {
       return _buildEmptyState("No food orders yet.", Icons.fastfood_outlined);
@@ -333,7 +327,6 @@ class ProfilePage extends GetView<ProfileController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Order
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -375,8 +368,6 @@ class ProfilePage extends GetView<ProfileController> {
                 ],
               ),
               const Divider(color: Colors.grey, thickness: 0.2, height: 24),
-
-              // Daftar Item Makanan
               ...items.map(
                 (item) => Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
@@ -401,11 +392,8 @@ class ProfilePage extends GetView<ProfileController> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 10),
               const Divider(color: Colors.grey, thickness: 0.5),
-
-              // Total
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -425,6 +413,150 @@ class ProfilePage extends GetView<ProfileController> {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // --- LIST RENTALS (WIDGET BARU) ---
+  Widget _buildRentalList() {
+    if (controller.myRentals.isEmpty) {
+      return _buildEmptyState("No active rentals.", Icons.movie_outlined);
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      itemCount: controller.myRentals.length,
+      itemBuilder: (context, index) {
+        final rental = controller.myRentals[index];
+
+        // Cek status kedaluwarsa
+        Timestamp? endTimestamp = rental['endDate'];
+        bool isExpired = false;
+        String validUntil = "-";
+
+        if (endTimestamp != null) {
+          DateTime end = endTimestamp.toDate();
+          isExpired = end.isBefore(DateTime.now());
+          validUntil = "${end.day}/${end.month}/${end.year}";
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          height: 140,
+          decoration: BoxDecoration(
+            color: AppTheme.secondaryBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Row(
+            children: [
+              // Poster
+              ClipRRect(
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(16),
+                ),
+                child: Image.network(
+                  rental['posterUrl'] ?? 'https://via.placeholder.com/100',
+                  width: 100,
+                  height: 140,
+                  fit: BoxFit.cover,
+                  errorBuilder: (ctx, err, stack) =>
+                      Container(width: 100, color: Colors.grey),
+                ),
+              ),
+
+              // Info
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        rental['movieTitle'] ?? 'Unknown',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.lightText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.timer,
+                            size: 14,
+                            color: AppTheme.primaryGold,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "${rental['durationDays']} Days",
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: AppTheme.primaryGold,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "Until: $validUntil",
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+
+                      // Status Badge (Active/Expired)
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isExpired
+                                ? Colors.red.withOpacity(0.2)
+                                : Colors.blue.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isExpired
+                                  ? Colors.red.withOpacity(0.5)
+                                  : Colors.blue.withOpacity(0.5),
+                            ),
+                          ),
+                          child: Text(
+                            isExpired ? "EXPIRED" : "ACTIVE",
+                            style: GoogleFonts.poppins(
+                              color: isExpired ? Colors.red : Colors.blue,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

@@ -11,4 +11,5 @@ class AppRoutes {
   static const String cart = '/cart';
   static const String community = '/community';
   static const String rentals = '/rentals';
+  static const String rentTransaction = '/rent-transaction';
 }

@@ -13,7 +13,8 @@ class ProfileController extends GetxController {
 
   // Data History
   final myTickets = <Map<String, dynamic>>[].obs;
-  final myFoodOrders = <Map<String, dynamic>>[].obs; // History Makanan
+  final myFoodOrders = <Map<String, dynamic>>[].obs;
+  final myRentals = <Map<String, dynamic>>[].obs; // Data Riwayat Sewa (BARU)
 
   final isLoading = true.obs;
 
@@ -29,12 +30,10 @@ class ProfileController extends GetxController {
     if (user != null) {
       userEmail.value = user.email ?? "";
 
-      // Coba ambil nama dari Firestore
       _firestore.collection('users').doc(user.uid).get().then((doc) {
         if (doc.exists && doc.data() != null) {
           userName.value = doc.data()!['name'] ?? "User";
         } else {
-          // Fallback: Ambil nama dari email
           userName.value = user.email!.split('@')[0];
         }
       });
@@ -48,8 +47,7 @@ class ProfileController extends GetxController {
     try {
       isLoading.value = true;
 
-      // 1. Ambil Tiket Film (Terbaru di atas)
-      // Note: Pastikan Index Firestore sudah dibuat jika query ini error
+      // 1. Ambil Tiket Film
       final ticketSnapshot = await _firestore
           .collection('tickets')
           .where('userId', isEqualTo: user.uid)
@@ -62,7 +60,7 @@ class ProfileController extends GetxController {
         return data;
       }).toList();
 
-      // 2. Ambil Pesanan Makanan (Terbaru di atas)
+      // 2. Ambil Pesanan Makanan
       final orderSnapshot = await _firestore
           .collection('orders')
           .where('userId', isEqualTo: user.uid)
@@ -70,6 +68,19 @@ class ProfileController extends GetxController {
           .get();
 
       myFoodOrders.value = orderSnapshot.docs.map((doc) {
+        var data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+
+      // 3. Ambil Riwayat Sewa (Rentals) - BARU
+      final rentalSnapshot = await _firestore
+          .collection('rentals')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('rentedAt', descending: true)
+          .get();
+
+      myRentals.value = rentalSnapshot.docs.map((doc) {
         var data = doc.data();
         data['id'] = doc.id;
         return data;

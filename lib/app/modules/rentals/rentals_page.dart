@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
-import '../widgets/movie_poster_card.dart';
 import 'rentals_controller.dart';
 
 class RentalsPage extends GetView<RentalsController> {
@@ -167,7 +166,8 @@ class RentalsPage extends GetView<RentalsController> {
 
   Widget _buildGridMovieCard(dynamic movie) {
     return GestureDetector(
-      onTap: () => controller.goToDetail(movie.id),
+      // Navigasi ke halaman transaksi sewa
+      onTap: () => controller.openRentTransaction(movie),
       child: Container(
         decoration: BoxDecoration(
           color: AppTheme.secondaryBackground,

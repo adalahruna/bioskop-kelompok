@@ -10,7 +10,7 @@ import '../../modules/auth/register/register_page.dart';
 import '../../modules/home/home_binding.dart';
 import '../../modules/home/home_page.dart';
 
-// Import Detail & Booking
+// Import Detail & Booking (Movies)
 import '../../modules/detail/movie_detail_binding.dart';
 import '../../modules/detail/movie_detail_page.dart';
 import '../../modules/booking/booking_binding.dart';
@@ -20,7 +20,7 @@ import '../../modules/booking/booking_page.dart';
 import '../../modules/profile/profile_binding.dart';
 import '../../modules/profile/profile_page.dart';
 
-// Import Movies
+// Import Movies Catalog
 import '../../modules/movies/movies_binding.dart';
 import '../../modules/movies/movies_page.dart';
 
@@ -31,9 +31,10 @@ import '../../modules/food/cart_page.dart';
 // Import Community
 import '../../modules/community/community_page.dart';
 
-// --- IMPORT RENTALS ---
+// Import Rentals
 import '../../modules/rentals/rentals_binding.dart';
 import '../../modules/rentals/rentals_page.dart';
+import '../../modules/rentals/rent_transaction_page.dart'; // Import Halaman Transaksi Sewa
 
 // Import Routes
 import 'app_routes.dart';
@@ -105,8 +106,18 @@ class AppPages {
     GetPage(
       name: AppRoutes.rentals,
       page: () => const RentalsPage(),
-      binding: RentalsBinding(), // Pastikan ejaannya 'Binding' bukan 'Bindng'
+      binding: RentalsBinding(),
       transition: Transition.rightToLeft,
+    ),
+
+    // Halaman Transaksi Sewa (Baru)
+    GetPage(
+      name: AppRoutes.rentTransaction,
+      page: () => const RentTransactionPage(),
+      binding:
+          RentalsBinding(), // Menggunakan binding yang sama dengan RentalsPage
+      transition: Transition
+          .downToUp, // Muncul dari bawah agar terlihat seperti proses checkout
     ),
 
     // --- USER ---
