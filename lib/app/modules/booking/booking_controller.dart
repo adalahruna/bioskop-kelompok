@@ -1,22 +1,35 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/app_routes.dart';
-import '../../core/theme/app_theme.dart'; // Untuk warna snackbar
 
 class BookingController extends GetxController {
-  // Data Film yang diterima dari halaman Detail
+  // Data Film
   late final int movieId;
   late final String movieTitle;
   late final String posterUrl;
 
-  // Konfigurasi Kursi
-  // 0 = Tersedia, 1 = Dipilih, 2 = Sudah Dipesan (Sold)
-  // Kita buat 6 baris x 8 kolom
+  // Konfigurasi Kursi (0=Avail, 1=Selected, 2=Sold)
   var seats = List.generate(6, (i) => List.generate(8, (j) => 0.obs)).obs;
-
-  // List kursi yang dipilih user [[baris, kolom], [baris, kolom]]
   var selectedSeats = <List<int>>[].obs;
+
+  // --- JADWAL TAYANG (BARU) ---
+  final selectedDate = Rx<DateTime>(DateTime.now());
+  final selectedTime = "".obs;
+
+  // List jam tayang statis
+  final List<String> timeSlots = [
+    "10:30",
+    "12:00",
+    "14:30",
+    "16:00",
+    "18:30",
+    "20:00",
+    "22:30",
+  ];
 
   final double pricePerTicket = 50000.0;
   final isLoading = false.obs;
@@ -24,62 +37,115 @@ class BookingController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Ambil argumen
     final args = Get.arguments as Map<String, dynamic>;
     movieId = args['id'];
     movieTitle = args['title'];
     posterUrl = args['poster'];
 
-    // Simulasi kursi yang sudah terjual (Random)
-    // Nanti ini bisa diambil dari Firestore jika mau advanced
+    // Reset kursi sold secara random untuk simulasi
     _randomizeSoldSeats();
   }
 
+  // Generate 7 hari ke depan untuk dipilih
+  List<DateTime> get next7Days {
+    return List.generate(
+      7,
+      (index) => DateTime.now().add(Duration(days: index)),
+    );
+  }
+
+  // Cek apakah jam tayang sudah lewat (Realtime Validation)
+  bool isTimeSlotExpired(String time) {
+    // Jika tanggal yang dipilih BUKAN hari ini, maka jam tidak expired
+    final now = DateTime.now();
+    if (selectedDate.value.day != now.day ||
+        selectedDate.value.month != now.month ||
+        selectedDate.value.year != now.year) {
+      return false;
+    }
+
+    // Jika HARI INI, cek jamnya
+    try {
+      final parts = time.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      final slotTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+      // Jika waktu slot SEBELUM waktu sekarang, berarti expired
+      return slotTime.isBefore(now);
+    } catch (e) {
+      return true; // Default disable jika error parsing
+    }
+  }
+
+  void selectDate(DateTime date) {
+    selectedDate.value = date;
+    // Reset jam jika pindah tanggal agar user memilih ulang
+    selectedTime.value = "";
+    // (Opsional) Di sini bisa panggil API/Firebase untuk load kursi yang sold pada tanggal tsb
+    _randomizeSoldSeats();
+  }
+
+  void selectTime(String time) {
+    if (isTimeSlotExpired(time)) {
+      Get.snackbar(
+        "Jadwal Lewat",
+        "Film sudah mulai atau selesai.",
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+      return;
+    }
+    selectedTime.value = time;
+  }
+
   void _randomizeSoldSeats() {
-    // Buat beberapa kursi random jadi status 2 (Sold)
+    // Reset semua jadi 0
+    for (var row in seats) {
+      for (var seat in row) seat.value = 0;
+    }
+    selectedSeats.clear();
+
+    // Randomize lagi (Simulasi kursi terjual berbeda tiap sesi)
     seats[0][2].value = 2;
     seats[0][3].value = 2;
-    seats[2][5].value = 2;
-    seats[2][6].value = 2;
-    seats[4][0].value = 2;
-    seats[4][1].value = 2;
+    // Tambah random logic lain jika mau
   }
 
   void toggleSeat(int row, int col) {
-    if (seats[row][col].value == 2) return; // Jangan apa-apakan kursi Sold
+    if (seats[row][col].value == 2) return;
 
     if (seats[row][col].value == 0) {
-      // Pilih Kursi
       seats[row][col].value = 1;
       selectedSeats.add([row, col]);
     } else {
-      // Batalkan Pilih
       seats[row][col].value = 0;
       selectedSeats.removeWhere((s) => s[0] == row && s[1] == col);
     }
-    // Trigger update UI
     seats.refresh();
   }
 
   double get totalPrice => selectedSeats.length * pricePerTicket;
 
   String get seatNumbers {
-    // Ubah koordinat [0,0] jadi "A1", [1,2] jadi "B3"
     return selectedSeats
         .map((s) {
-          String rowLetter = String.fromCharCode(
-            65 + s[0],
-          ); // 65 adalah ASCII 'A'
+          String rowLetter = String.fromCharCode(65 + s[0]);
           String colNumber = (s[1] + 1).toString();
           return "$rowLetter$colNumber";
         })
         .join(", ");
   }
 
-  // --- FUNGSI MENYIMPAN KE FIREBASE ---
   void confirmBooking() async {
+    // Validasi Lengkap
+    if (selectedTime.value.isEmpty) {
+      Get.snackbar("Pilih Jadwal", "Silakan pilih jam tayang terlebih dahulu.");
+      return;
+    }
     if (selectedSeats.isEmpty) {
-      Get.snackbar("Error", "Pilih minimal 1 kursi!");
+      Get.snackbar("Pilih Kursi", "Silakan pilih minimal 1 kursi.");
       return;
     }
 
@@ -93,27 +159,35 @@ class BookingController extends GetxController {
     }
 
     try {
-      // Buat Data Transaksi
+      // Gabungkan Tanggal & Jam untuk disimpan
+      final timeParts = selectedTime.value.split(':');
+      final showTime = DateTime(
+        selectedDate.value.year,
+        selectedDate.value.month,
+        selectedDate.value.day,
+        int.parse(timeParts[0]),
+        int.parse(timeParts[1]),
+      );
+
       await FirebaseFirestore.instance.collection('tickets').add({
         'userId': user.uid,
         'movieId': movieId,
         'movieTitle': movieTitle,
         'posterUrl': posterUrl,
-        'seats': seatNumbers, // String "A1, A2"
+        'seats': seatNumbers,
         'totalPrice': totalPrice,
-        'bookingDate': FieldValue.serverTimestamp(), // Waktu server
-        'status': 'active', // active, used, cancelled
+        'bookingDate': FieldValue.serverTimestamp(), // Waktu transaksi
+        'showTime': Timestamp.fromDate(showTime), // Waktu nonton (Jadwal)
+        'status': 'active',
       });
 
-      // Sukses!
       Get.snackbar(
         "Berhasil!",
-        "Tiket berhasil dipesan. Cek riwayat anda.",
+        "Tiket untuk ${DateFormat('dd MMM, HH:mm').format(showTime)} berhasil dipesan.",
         backgroundColor: AppTheme.primaryGold,
         colorText: AppTheme.darkText,
       );
 
-      // Kembali ke Home
       Get.offAllNamed(AppRoutes.home);
     } catch (e) {
       Get.snackbar("Gagal", "Terjadi kesalahan server: $e");

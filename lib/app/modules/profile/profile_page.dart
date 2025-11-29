@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Penting untuk Timestamp
+import 'package:intl/intl.dart'; // Untuk format tanggal
 import '../../core/theme/app_theme.dart';
 import 'profile_controller.dart';
 
@@ -11,7 +12,7 @@ class ProfilePage extends GetView<ProfileController> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3, // Ubah jadi 3 Tab (Movies, Dining, Rentals)
+      length: 3, // 3 Tab: Movies, Dining, Rentals
       child: Scaffold(
         appBar: AppBar(
           title: Text(
@@ -31,12 +32,12 @@ class ProfilePage extends GetView<ProfileController> {
         ),
         body: Column(
           children: [
-            // 1. Header Profil
+            // 1. Header Profil (Foto & Nama Editable)
             _buildProfileHeader(),
 
             const SizedBox(height: 20),
 
-            // 2. Custom Tab Bar (Updated)
+            // 2. Custom Tab Bar
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               height: 45,
@@ -61,7 +62,7 @@ class ProfilePage extends GetView<ProfileController> {
                 tabs: const [
                   Tab(text: "Movies"),
                   Tab(text: "Dining"),
-                  Tab(text: "Rentals"), // Tab Baru
+                  Tab(text: "Rentals"),
                 ],
               ),
             ),
@@ -83,7 +84,7 @@ class ProfilePage extends GetView<ProfileController> {
                   children: [
                     _buildTicketList(), // Tab 1
                     _buildFoodOrderList(), // Tab 2
-                    _buildRentalList(), // Tab 3 (Baru)
+                    _buildRentalList(), // Tab 3
                   ],
                 );
               }),
@@ -94,7 +95,7 @@ class ProfilePage extends GetView<ProfileController> {
     );
   }
 
-  // --- WIDGETS ---
+  // --- WIDGETS HEADER (EDITABLE) ---
 
   Widget _buildProfileHeader() {
     return Container(
@@ -112,32 +113,113 @@ class ProfilePage extends GetView<ProfileController> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.primaryGold,
-            ),
-            child: const CircleAvatar(
-              radius: 35,
-              backgroundColor: AppTheme.darkBackground,
-              child: Icon(Icons.person, size: 40, color: AppTheme.primaryGold),
+          // --- FOTO PROFIL (UPLOAD SUPABASE) ---
+          GestureDetector(
+            onTap: controller.pickAndUploadImage, // Trigger Upload saat diklik
+            child: Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryGold,
+                  ),
+                  child: Obx(() {
+                    // 1. Cek jika sedang upload
+                    if (controller.isUploading.value) {
+                      return const CircleAvatar(
+                        radius: 35,
+                        backgroundColor: AppTheme.darkBackground,
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primaryGold,
+                        ),
+                      );
+                    }
+
+                    // 2. Cek jika URL foto ada (dari Supabase/Firestore)
+                    if (controller.userPhotoUrl.value.isNotEmpty) {
+                      return CircleAvatar(
+                        radius: 35,
+                        backgroundColor: AppTheme.darkBackground,
+                        backgroundImage: NetworkImage(
+                          controller.userPhotoUrl.value,
+                        ),
+                        onBackgroundImageError: (_, __) =>
+                            const Icon(Icons.person),
+                      );
+                    }
+
+                    // 3. Default Icon
+                    return const CircleAvatar(
+                      radius: 35,
+                      backgroundColor: AppTheme.darkBackground,
+                      child: Icon(
+                        Icons.person,
+                        size: 40,
+                        color: AppTheme.primaryGold,
+                      ),
+                    );
+                  }),
+                ),
+                // Ikon Kamera Kecil (Indikator Edit)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 14,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+
           const SizedBox(width: 20),
+
+          // --- INFO USER (EDITABLE NAME) ---
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Obx(
-                  () => Text(
-                    controller.userName.value,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.lightText,
+                Row(
+                  children: [
+                    // Nama User
+                    Obx(
+                      () => Text(
+                        controller.userName.value,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.lightText,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    // Tombol Edit Nama
+                    GestureDetector(
+                      onTap: controller.showEditNameDialog,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit,
+                          size: 14,
+                          color: AppTheme.primaryGold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 Obx(
                   () => Text(
@@ -178,6 +260,7 @@ class ProfilePage extends GetView<ProfileController> {
     );
   }
 
+  // --- TAB 1: LIST TIKET BIOSKOP ---
   Widget _buildTicketList() {
     if (controller.myTickets.isEmpty) {
       return _buildEmptyState(
@@ -191,9 +274,16 @@ class ProfilePage extends GetView<ProfileController> {
       itemCount: controller.myTickets.length,
       itemBuilder: (context, index) {
         final ticket = controller.myTickets[index];
+
+        String dateStr = "Unknown Date";
+        if (ticket['showTime'] != null && ticket['showTime'] is Timestamp) {
+          DateTime date = (ticket['showTime'] as Timestamp).toDate();
+          dateStr = DateFormat('EEE, d MMM • HH:mm').format(date);
+        }
+
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          height: 140,
+          height: 150,
           decoration: BoxDecoration(
             color: AppTheme.secondaryBackground,
             borderRadius: BorderRadius.circular(16),
@@ -208,7 +298,7 @@ class ProfilePage extends GetView<ProfileController> {
                 child: Image.network(
                   ticket['posterUrl'] ?? 'https://via.placeholder.com/100',
                   width: 100,
-                  height: 140,
+                  height: 150,
                   fit: BoxFit.cover,
                   errorBuilder: (ctx, err, stack) =>
                       Container(width: 100, color: Colors.grey),
@@ -235,16 +325,17 @@ class ProfilePage extends GetView<ProfileController> {
                       Row(
                         children: [
                           const Icon(
-                            Icons.event_seat,
+                            Icons.access_time,
                             size: 14,
                             color: AppTheme.primaryGold,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            "Seats: ${ticket['seats']}",
+                            dateStr,
                             style: GoogleFonts.poppins(
-                              color: Colors.grey,
-                              fontSize: 13,
+                              color: AppTheme.primaryGold,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -253,11 +344,24 @@ class ProfilePage extends GetView<ProfileController> {
                       Row(
                         children: [
                           const Icon(
-                            Icons.confirmation_number,
+                            Icons.event_seat,
                             size: 14,
-                            color: AppTheme.primaryGold,
+                            color: Colors.grey,
                           ),
                           const SizedBox(width: 6),
+                          Text(
+                            "Seats: ${ticket['seats']}",
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
                           Text(
                             "Rp ${ticket['totalPrice']}",
                             style: GoogleFonts.poppins(
@@ -265,32 +369,28 @@ class ProfilePage extends GetView<ProfileController> {
                               fontSize: 13,
                             ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.green.withOpacity(0.5),
+                              ),
+                            ),
+                            child: Text(
+                              "ACTIVE",
+                              style: GoogleFonts.poppins(
+                                color: Colors.green,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ],
-                      ),
-                      const Spacer(),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.green.withOpacity(0.5),
-                            ),
-                          ),
-                          child: Text(
-                            "ACTIVE",
-                            style: GoogleFonts.poppins(
-                              color: Colors.green,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -303,6 +403,7 @@ class ProfilePage extends GetView<ProfileController> {
     );
   }
 
+  // --- TAB 2: LIST PESANAN MAKANAN ---
   Widget _buildFoodOrderList() {
     if (controller.myFoodOrders.isEmpty) {
       return _buildEmptyState("No food orders yet.", Icons.fastfood_outlined);
@@ -315,6 +416,12 @@ class ProfilePage extends GetView<ProfileController> {
         final order = controller.myFoodOrders[index];
         final List items = order['items'] ?? [];
         final total = order['total'] ?? 0;
+
+        String orderDateStr = "-";
+        if (order['orderDate'] != null && order['orderDate'] is Timestamp) {
+          DateTime date = (order['orderDate'] as Timestamp).toDate();
+          orderDateStr = DateFormat('d MMM yyyy, HH:mm').format(date);
+        }
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -330,19 +437,34 @@ class ProfilePage extends GetView<ProfileController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.receipt_long,
-                        color: AppTheme.primaryGold,
-                        size: 18,
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.receipt_long,
+                            color: AppTheme.primaryGold,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Food Order",
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.lightText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Food Order",
-                        style: GoogleFonts.poppins(
-                          color: AppTheme.lightText,
-                          fontWeight: FontWeight.w600,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 26.0, top: 4),
+                        child: Text(
+                          orderDateStr,
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey,
+                            fontSize: 10,
+                          ),
                         ),
                       ),
                     ],
@@ -421,7 +543,7 @@ class ProfilePage extends GetView<ProfileController> {
     );
   }
 
-  // --- LIST RENTALS (WIDGET BARU) ---
+  // --- TAB 3: LIST SEWA FILM ---
   Widget _buildRentalList() {
     if (controller.myRentals.isEmpty) {
       return _buildEmptyState("No active rentals.", Icons.movie_outlined);
@@ -433,7 +555,6 @@ class ProfilePage extends GetView<ProfileController> {
       itemBuilder: (context, index) {
         final rental = controller.myRentals[index];
 
-        // Cek status kedaluwarsa
         Timestamp? endTimestamp = rental['endDate'];
         bool isExpired = false;
         String validUntil = "-";
@@ -441,12 +562,12 @@ class ProfilePage extends GetView<ProfileController> {
         if (endTimestamp != null) {
           DateTime end = endTimestamp.toDate();
           isExpired = end.isBefore(DateTime.now());
-          validUntil = "${end.day}/${end.month}/${end.year}";
+          validUntil = DateFormat('d MMM yyyy').format(end);
         }
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          height: 140,
+          height: 150,
           decoration: BoxDecoration(
             color: AppTheme.secondaryBackground,
             borderRadius: BorderRadius.circular(16),
@@ -454,7 +575,6 @@ class ProfilePage extends GetView<ProfileController> {
           ),
           child: Row(
             children: [
-              // Poster
               ClipRRect(
                 borderRadius: const BorderRadius.horizontal(
                   left: Radius.circular(16),
@@ -462,14 +582,12 @@ class ProfilePage extends GetView<ProfileController> {
                 child: Image.network(
                   rental['posterUrl'] ?? 'https://via.placeholder.com/100',
                   width: 100,
-                  height: 140,
+                  height: 150,
                   fit: BoxFit.cover,
                   errorBuilder: (ctx, err, stack) =>
                       Container(width: 100, color: Colors.grey),
                 ),
               ),
-
-              // Info
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
@@ -524,8 +642,6 @@ class ProfilePage extends GetView<ProfileController> {
                         ],
                       ),
                       const Spacer(),
-
-                      // Status Badge (Active/Expired)
                       Align(
                         alignment: Alignment.bottomRight,
                         child: Container(

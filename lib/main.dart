@@ -3,16 +3,26 @@ import 'package:get/get.dart';
 import 'app/core/theme/app_theme.dart';
 import 'app/core/utils/app_pages.dart';
 import 'app/core/utils/app_routes.dart';
-//tes techa
-// Import Firebase
+
 import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_auth/firebase_auth.dart'; // (Belum kita pakai di sini)
-import 'firebase_options.dart'; // File yang digenerasi FlutterFire
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
+
+// --- IMPORT SUPABASE ---
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
-  // Pastikan Firebase terinisialisasi
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Init Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 2. Init Supabase (GANTI URL & KEY DENGAN PUNYAMU)
+  await Supabase.initialize(
+    url: 'https://lyypmixrenhvidobfqaw.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5eXBtaXhyZW5odmlkb2JmcWF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNDI1ODAsImV4cCI6MjA3OTkxODU4MH0.UCeTtoVcENwf_Iz08NKumfhz2FSZc47rmbLP0zErPJg',
+  );
 
   runApp(const MyApp());
 }
@@ -26,11 +36,10 @@ class MyApp extends StatelessWidget {
       title: "Cinema Noir",
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-
-      // Untuk saat ini, kita paksa SELALU mulai dari Login
-      initialRoute: AppRoutes.login,
-
-      getPages: AppPages.pages, // Daftar semua halaman
+      initialRoute: FirebaseAuth.instance.currentUser == null
+          ? AppRoutes.login
+          : AppRoutes.home,
+      getPages: AppPages.pages,
     );
   }
 }
