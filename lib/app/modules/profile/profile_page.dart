@@ -32,7 +32,7 @@ class ProfilePage extends GetView<ProfileController> {
         ),
         body: Column(
           children: [
-            // 1. Header Profil (Foto & Nama Editable)
+            // 1. Header Profil
             _buildProfileHeader(),
 
             const SizedBox(height: 20),
@@ -82,9 +82,9 @@ class ProfilePage extends GetView<ProfileController> {
 
                 return TabBarView(
                   children: [
-                    _buildTicketList(), // Tab 1
-                    _buildFoodOrderList(), // Tab 2
-                    _buildRentalList(), // Tab 3
+                    _buildTicketList(), // Tab 1: Tiket Bioskop (Updated Logic)
+                    _buildFoodOrderList(), // Tab 2: Makanan
+                    _buildRentalList(), // Tab 3: Sewa Film
                   ],
                 );
               }),
@@ -95,7 +95,7 @@ class ProfilePage extends GetView<ProfileController> {
     );
   }
 
-  // --- WIDGETS HEADER (EDITABLE) ---
+  // --- WIDGETS ---
 
   Widget _buildProfileHeader() {
     return Container(
@@ -275,10 +275,20 @@ class ProfilePage extends GetView<ProfileController> {
       itemBuilder: (context, index) {
         final ticket = controller.myTickets[index];
 
+        // Format Tanggal Tayang & Cek Expired
         String dateStr = "Unknown Date";
+        bool isExpired = false;
+
         if (ticket['showTime'] != null && ticket['showTime'] is Timestamp) {
           DateTime date = (ticket['showTime'] as Timestamp).toDate();
-          dateStr = DateFormat('EEE, d MMM • HH:mm').format(date);
+          dateStr = DateFormat(
+            'EEE, d MMM • HH:mm',
+          ).format(date); // Contoh: Mon, 12 Oct • 14:00
+
+          // Cek apakah waktu tayang sudah lewat dari sekarang
+          if (date.isBefore(DateTime.now())) {
+            isExpired = true;
+          }
         }
 
         return Container(
@@ -322,6 +332,7 @@ class ProfilePage extends GetView<ProfileController> {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      // TANGGAL TAYANG
                       Row(
                         children: [
                           const Icon(
@@ -369,22 +380,27 @@ class ProfilePage extends GetView<ProfileController> {
                               fontSize: 13,
                             ),
                           ),
+                          // Badge Status (ACTIVE / EXPIRED)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.2),
+                              color: isExpired
+                                  ? Colors.red.withOpacity(0.2)
+                                  : Colors.green.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Colors.green.withOpacity(0.5),
+                                color: isExpired
+                                    ? Colors.red.withOpacity(0.5)
+                                    : Colors.green.withOpacity(0.5),
                               ),
                             ),
                             child: Text(
-                              "ACTIVE",
+                              isExpired ? "EXPIRED" : "ACTIVE",
                               style: GoogleFonts.poppins(
-                                color: Colors.green,
+                                color: isExpired ? Colors.red : Colors.green,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -555,14 +571,22 @@ class ProfilePage extends GetView<ProfileController> {
       itemBuilder: (context, index) {
         final rental = controller.myRentals[index];
 
+        Timestamp? startTimestamp = rental['startDate'];
         Timestamp? endTimestamp = rental['endDate'];
+
         bool isExpired = false;
         String validUntil = "-";
+        String rentedOn = "-";
 
         if (endTimestamp != null) {
           DateTime end = endTimestamp.toDate();
           isExpired = end.isBefore(DateTime.now());
           validUntil = DateFormat('d MMM yyyy').format(end);
+        }
+
+        if (startTimestamp != null) {
+          DateTime start = startTimestamp.toDate();
+          rentedOn = DateFormat('d MMM yyyy').format(start);
         }
 
         return Container(
@@ -606,19 +630,20 @@ class ProfilePage extends GetView<ProfileController> {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      // INFO TANGGAL SEWA
                       Row(
                         children: [
                           const Icon(
-                            Icons.timer,
+                            Icons.play_circle_outline,
                             size: 14,
-                            color: AppTheme.primaryGold,
+                            color: Colors.grey,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            "${rental['durationDays']} Days",
+                            "Started: $rentedOn",
                             style: GoogleFonts.poppins(
                               color: Colors.grey,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -627,16 +652,17 @@ class ProfilePage extends GetView<ProfileController> {
                       Row(
                         children: [
                           const Icon(
-                            Icons.calendar_today,
+                            Icons.event_busy,
                             size: 14,
                             color: AppTheme.primaryGold,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            "Until: $validUntil",
+                            "Expires: $validUntil",
                             style: GoogleFonts.poppins(
-                              color: Colors.grey,
-                              fontSize: 13,
+                              color: AppTheme.primaryGold,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
