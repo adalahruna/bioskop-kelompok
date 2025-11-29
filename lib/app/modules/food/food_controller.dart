@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/food_model.dart';
-import '../../data/models/cart_item_model.dart'; // Import model cart
+import '../../data/models/cart_item_model.dart';
 import '../../core/utils/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -11,79 +11,256 @@ class FoodController extends GetxController {
   final selectedCategory = "All".obs;
   final categories = ["All", "Snack", "Drink", "Combo"];
 
-  // Data Dummy Makanan
-  final allFoods = <FoodModel>[
-    FoodModel(
-      name: "Caramel Popcorn",
-      price: "Rp 45.000",
-      category: "Snack",
-      rating: 4.8,
-      description: "Popcorn renyah dengan lapisan karamel manis premium.",
-      image:
-          "https://images.unsplash.com/photo-1578849278619-e73505e9610f?q=80&w=500&auto=format&fit=crop",
-    ),
-    FoodModel(
-      name: "Nachos Supreme",
-      price: "Rp 50.000",
-      category: "Snack",
-      rating: 4.5,
-      description:
-          "Keripik tortilla jagung asli disajikan dengan saus keju hangat.",
-      image:
-          "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=500&auto=format&fit=crop",
-    ),
-    FoodModel(
-      name: "Hotdog Premium",
-      price: "Rp 55.000",
-      category: "Snack",
-      rating: 4.6,
-      description: "Sosis sapi jumbo dalam roti lembut dengan saus mustard.",
-      image:
-          "https://images.unsplash.com/photo-1612392062631-94dd858cba88?q=80&w=500&auto=format&fit=crop",
-    ),
-    FoodModel(
-      name: "Coca Cola Large",
-      price: "Rp 25.000",
-      category: "Drink",
-      rating: 4.9,
-      description: "Kesegaran soda klasik dalam ukuran besar.",
-      image:
-          "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop",
-    ),
-    FoodModel(
-      name: "Iced Lemon Tea",
-      price: "Rp 30.000",
-      category: "Drink",
-      rating: 4.7,
-      description: "Teh dingin segar dengan perasan lemon asli.",
-      image:
-          "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=500&auto=format&fit=crop",
-    ),
-    FoodModel(
-      name: "Couple Combo",
-      price: "Rp 85.000",
-      category: "Combo",
-      rating: 5.0,
-      description: "Paket hemat untuk berdua: 1 Popcorn Besar + 2 Minuman.",
-      image:
-          "https://images.unsplash.com/photo-1585647347384-2593bc35786b?q=80&w=500&auto=format&fit=crop",
-    ),
-  ].obs;
+  // --- KONFIGURASI SUPABASE ---
+  final String baseUrl =
+      'https://lyypmixrenhvidobfqaw.supabase.co/storage/v1/object/public/products/';
+
+  // SEARCH CONTROLLER (BARU)
+  final TextEditingController searchController = TextEditingController();
+
+  // List Menu Makanan Lengkap
+  late final List<FoodModel> allFoods;
 
   final displayedFoods = <FoodModel>[].obs;
-
-  // --- CART LOGIC ---
   final cartItems = <CartItemModel>[].obs;
   final isCheckingOut = false.obs;
 
   @override
   void onInit() {
     super.onInit();
+    _initializeMenu();
     displayedFoods.assignAll(allFoods);
   }
 
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
+  }
+
+  // --- LOGIKA SEARCH (BARU) ---
+  void searchFood(String query) {
+    if (query.isEmpty) {
+      // Jika kosong, kembalikan sesuai kategori yang dipilih
+      changeCategory(selectedCategory.value);
+    } else {
+      final lowerQuery = query.toLowerCase();
+      // Cari di semua makanan (Global search)
+      final result = allFoods
+          .where((f) => f.name.toLowerCase().contains(lowerQuery))
+          .toList();
+      displayedFoods.assignAll(result);
+    }
+  }
+
+  void _initializeMenu() {
+    allFoods = [
+      // --- MAKANAN (SNACKS) ---
+      FoodModel(
+        name: "Popcorn Caramel",
+        price: "Rp 50.000",
+        category: "Snack",
+        rating: 4.9,
+        description: "Popcorn klasik bioskop dengan lapisan karamel tebal.",
+        image: "${baseUrl}popcorn.jpg",
+      ),
+      FoodModel(
+        name: "Chicken Popcorn Bucket",
+        price: "Rp 65.000",
+        category: "Snack",
+        rating: 4.8,
+        description: "Ayam goreng tepung bite-sized dalam bucket jumbo.",
+        image: "${baseUrl}chicken_bucket.jpg",
+      ),
+      FoodModel(
+        name: "French Fries",
+        price: "Rp 40.000",
+        category: "Snack",
+        rating: 4.5,
+        description: "Kentang goreng renyah dengan taburan garam laut.",
+        image: "${baseUrl}french_fries.jpg",
+      ),
+      FoodModel(
+        name: "Hot Dog Premium",
+        price: "Rp 55.000",
+        category: "Snack",
+        rating: 4.6,
+        description: "Sosis sapi panggang dengan roti lembut dan saus mustard.",
+        image: "${baseUrl}hotdog.jpg",
+      ),
+      FoodModel(
+        name: "Cheese Balls",
+        price: "Rp 45.000",
+        category: "Snack",
+        rating: 4.7,
+        description: "Bola-bola keju lumer yang digoreng keemasan.",
+        image: "${baseUrl}cheese_balls.jpg",
+      ),
+      FoodModel(
+        name: "Beef Burger",
+        price: "Rp 60.000",
+        category: "Snack",
+        rating: 4.8,
+        description: "Burger daging sapi asli dengan keju dan sayuran segar.",
+        image: "${baseUrl}burger.jpg",
+      ),
+      FoodModel(
+        name: "Takoyaki",
+        price: "Rp 45.000",
+        category: "Snack",
+        rating: 4.6,
+        description: "8 pcs bola gurita khas Jepang dengan saus spesial.",
+        image: "${baseUrl}takoyaki.jpg",
+      ),
+      FoodModel(
+        name: "Churros",
+        price: "Rp 35.000",
+        category: "Snack",
+        rating: 4.5,
+        description: "Donat spanyol renyah dengan taburan gula kayu manis.",
+        image: "${baseUrl}churros.jpg",
+      ),
+      FoodModel(
+        name: "Beef Kebab",
+        price: "Rp 45.000",
+        category: "Snack",
+        rating: 4.7,
+        description: "Tortilla wrap isi daging sapi panggang dan sayuran.",
+        image: "${baseUrl}kebab.jpg",
+      ),
+      FoodModel(
+        name: "Soft Cookies",
+        price: "Rp 25.000",
+        category: "Snack",
+        rating: 4.9,
+        description: "Cookies coklat lumer yang hangat dan lembut.",
+        image: "${baseUrl}cookies.jpg",
+      ),
+
+      // --- MINUMAN (DRINKS) ---
+      FoodModel(
+        name: "Mineral Water",
+        price: "Rp 15.000",
+        category: "Drink",
+        rating: 5.0,
+        description: "Air mineral pegunungan yang menyegarkan (600ml).",
+        image: "${baseUrl}mineral_water.jpg",
+      ),
+      FoodModel(
+        name: "Coca Cola",
+        price: "Rp 30.000",
+        category: "Drink",
+        rating: 4.8,
+        description: "Minuman bersoda rasa kola yang legendaris.",
+        image: "${baseUrl}coke.jpg",
+      ),
+      FoodModel(
+        name: "Dr. Pepper",
+        price: "Rp 35.000",
+        category: "Drink",
+        rating: 4.6,
+        description: "Minuman soda unik dengan campuran 23 rasa.",
+        image: "${baseUrl}dr_pepper.jpg",
+      ),
+      FoodModel(
+        name: "Pepsi",
+        price: "Rp 30.000",
+        category: "Drink",
+        rating: 4.7,
+        description: "Minuman soda kola yang manis dan segar.",
+        image: "${baseUrl}pepsi.jpg",
+      ),
+      FoodModel(
+        name: "Americano",
+        price: "Rp 35.000",
+        category: "Drink",
+        rating: 4.5,
+        description: "Kopi hitam panas dari biji kopi pilihan.",
+        image: "${baseUrl}black_coffee.jpg",
+      ),
+      FoodModel(
+        name: "Strawberry Milkshake",
+        price: "Rp 45.000",
+        category: "Drink",
+        rating: 4.9,
+        description: "Susu kocok rasa strawberry yang creamy dan kental.",
+        image: "${baseUrl}milkshake.jpg",
+      ),
+      FoodModel(
+        name: "Fanta Orange",
+        price: "Rp 30.000",
+        category: "Drink",
+        rating: 4.6,
+        description: "Minuman soda rasa jeruk yang ceria.",
+        image: "${baseUrl}fanta.jpg",
+      ),
+      FoodModel(
+        name: "Iced Latte",
+        price: "Rp 40.000",
+        category: "Drink",
+        rating: 4.8,
+        description: "Kopi susu gula aren dingin kekinian.",
+        image: "${baseUrl}iced_latte.jpg",
+      ),
+      FoodModel(
+        name: "Tea",
+        price: "Rp 25.000",
+        category: "Drink",
+        rating: 4.7,
+        description: "Teh manis dingin klasik bioskop.",
+        image: "${baseUrl}tea.jpg",
+      ),
+      FoodModel(
+        name: "Sprite",
+        price: "Rp 30.000",
+        category: "Drink",
+        rating: 4.7,
+        description: "Minuman soda rasa lemon-lime yang jernih.",
+        image: "${baseUrl}sprite.jpg",
+      ),
+
+      // --- COMBO ---
+      FoodModel(
+        name: "Solo Combo",
+        price: "Rp 75.000",
+        category: "Combo",
+        rating: 4.9,
+        description: "1 Popcorn + 1 Coca Cola. Pas untuk sendirian.",
+        image: "${baseUrl}combo_solo.jpg",
+      ),
+      FoodModel(
+        name: "Chicken Feast Combo",
+        price: "Rp 110.000",
+        category: "Combo",
+        rating: 5.0,
+        description: "Chicken Bucket + Fries + Coca Cola.",
+        image: "${baseUrl}combo_chicken.jpg",
+      ),
+      FoodModel(
+        name: "Seafood Snack Combo",
+        price: "Rp 95.000",
+        category: "Combo",
+        rating: 4.7,
+        description: "Fish Roll + Fries + Sprite segar.",
+        image: "${baseUrl}combo_fish.jpg",
+      ),
+      FoodModel(
+        name: "Burger Meal Combo",
+        price: "Rp 100.000",
+        category: "Combo",
+        rating: 4.8,
+        description: "Beef Burger + Fries + Coca Cola.",
+        image: "${baseUrl}combo_burger.jpg",
+      ),
+    ];
+  }
+
+  // --- LOGIKA FILTER & CART ---
   void changeCategory(String category) {
     selectedCategory.value = category;
+    // Reset search saat ganti kategori agar tidak bingung
+    searchController.clear();
+
     if (category == "All") {
       displayedFoods.assignAll(allFoods);
     } else {
@@ -93,27 +270,23 @@ class FoodController extends GetxController {
     }
   }
 
-  // Menambah ke keranjang
   void addToCart(FoodModel food) {
-    // Cek apakah item sudah ada di keranjang
     var existingItem = cartItems.firstWhereOrNull(
       (item) => item.food.name == food.name,
     );
-
     if (existingItem != null) {
       existingItem.quantity++;
-      cartItems.refresh(); // Trigger update UI
+      cartItems.refresh();
     } else {
       cartItems.add(CartItemModel(food: food));
     }
-
     Get.snackbar(
       "Added",
       "${food.name} added to bag",
-      duration: const Duration(seconds: 1),
-      backgroundColor: Colors.black54,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(milliseconds: 1500),
+      backgroundColor: AppTheme.primaryGold, // Warna Emas biar kelihatan
+      colorText: AppTheme.darkText,
+      snackPosition: SnackPosition.TOP,
       margin: const EdgeInsets.all(20),
     );
   }
@@ -136,7 +309,6 @@ class FoodController extends GetxController {
     }
   }
 
-  // Menghitung Total Harga Seluruh Keranjang
   double get grandTotal {
     return cartItems.fold(0, (sum, item) => sum + item.totalPrice);
   }
@@ -149,10 +321,8 @@ class FoodController extends GetxController {
     Get.toNamed(AppRoutes.cart);
   }
 
-  // Checkout ke Firestore
   void checkout() async {
     if (cartItems.isEmpty) return;
-
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       Get.snackbar("Error", "Please login first");
@@ -160,9 +330,7 @@ class FoodController extends GetxController {
     }
 
     isCheckingOut.value = true;
-
     try {
-      // Simpan detail pesanan
       final orderData = {
         'userId': user.uid,
         'items': cartItems
@@ -180,14 +348,9 @@ class FoodController extends GetxController {
         'orderDate': FieldValue.serverTimestamp(),
         'type': 'food_order',
       };
-
       await FirebaseFirestore.instance.collection('orders').add(orderData);
-
-      // Reset Keranjang
       cartItems.clear();
-
-      // Kembali ke Home atau Food
-      Get.back(); // Tutup halaman cart
+      Get.back();
       Get.snackbar(
         "Success",
         "Order placed successfully!",
