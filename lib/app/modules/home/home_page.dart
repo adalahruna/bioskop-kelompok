@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/app_routes.dart'; // Import untuk navigasi langsung
+import '../../core/utils/app_routes.dart';
 import 'home_controller.dart';
 import '../widgets/movie_poster_card.dart';
 import '../../data/models/movie_model.dart';
@@ -20,85 +20,65 @@ class HomePage extends GetView<HomeController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Header (Sapaan & Profil)
+              // 1. Header (Nama & Profil)
               _buildHeader(),
-
               const SizedBox(height: 10),
 
-              // 2. Carousel Promo (Fokus Utama)
+              // 2. Carousel Promo
               _buildPromoCarousel(),
-
               const SizedBox(height: 30),
 
-              // 3. Menu Grid (Tombol Kategori)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Text(
-                  "Quick Menu",
-                  style: GoogleFonts.poppins(
-                    color: AppTheme.lightText.withOpacity(0.6),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Menu Baris
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildCompactMenuBtn(
-                      icon: Icons.movie_creation_outlined,
-                      label: "Movies",
-                      onTap: controller.navigateToMovies,
-                    ),
-                    _buildCompactMenuBtn(
-                      icon: Icons.fastfood_outlined,
-                      label: "Dining",
-                      onTap: controller.navigateToFood,
-                    ),
-                    // Navigasi langsung ke Community
-                    _buildCompactMenuBtn(
-                      icon: Icons.forum_outlined,
-                      label: "Community",
-                      onTap: () => Get.toNamed(AppRoutes.community),
-                    ),
-                    // Navigasi langsung ke Rentals
-                    _buildCompactMenuBtn(
-                      icon: Icons.movie_filter_outlined,
-                      label: "Rentals",
-                      onTap: () => Get.toNamed(AppRoutes.rentals),
-                    ),
-                  ],
-                ),
-              ),
-
+              // 3. Quick Menu (Tombol Navigasi)
+              _buildQuickMenuSection(),
               const SizedBox(height: 30),
 
-              // 4. Trending Movies (List Horizontal dari API)
+              // --- KONTEN UTAMA (6 KATEGORI) ---
+
+              // 4. Sedang Tayang
+              _buildSectionHeader("Now Showing", controller.navigateToMovies),
+              _buildMovieList(controller.nowPlayingMovies),
+              const SizedBox(height: 30),
+
+              // 5. Top Rated
               _buildSectionHeader(
-                "Trending Now",
-                () => controller.navigateToMovies(),
+                "Top Rated Movies",
+                controller.navigateToMovies,
               ),
-              _buildTrendingMoviesList(),
-
+              _buildMovieList(controller.topRatedMovies),
               const SizedBox(height: 30),
 
-              // 5. Popular Food (List Horizontal Dummy)
+              // 6. Akan Tayang
+              _buildSectionHeader("Coming Soon", controller.navigateToMovies),
+              _buildMovieList(controller.upcomingMovies),
+              const SizedBox(height: 30),
+
+              // 7. Makanan (Dining)
               _buildSectionHeader(
-                "Best Sellers",
-                () => controller.navigateToFood(),
+                "Best Snacks & Drinks",
+                controller.navigateToFood,
               ),
-              _buildPopularFoodList(),
+              _buildFoodList(controller.popularFoods),
+              const SizedBox(height: 30),
+
+              // 8. Film Rental
+              _buildSectionHeader(
+                "Movies for Rent",
+                controller.navigateToRentals,
+              ),
+              _buildMovieList(controller.rentalMovies, isRental: true),
+              const SizedBox(height: 30),
+
+              // 9. Komunitas (Community)
+              _buildSectionHeader(
+                "Community Buzz",
+                controller.navigateToCommunity,
+              ),
+              _buildCommunityList(),
 
               const SizedBox(height: 40),
 
-              // 6. Footer Informasi Perusahaan
+              // 10. Footer
               _buildCompanyFooter(),
-
               const SizedBox(height: 20),
             ],
           ),
@@ -128,7 +108,7 @@ class HomePage extends GetView<HomeController> {
               ),
               Obx(
                 () => Text(
-                  "Hello, ${controller.userName.value}",
+                  "Welcome, ${controller.userName.value}",
                   style: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
                 ),
               ),
@@ -167,9 +147,8 @@ class HomePage extends GetView<HomeController> {
         options: CarouselOptions(
           height: 200.0,
           autoPlay: true,
-          autoPlayInterval: const Duration(seconds: 6),
           enlargeCenterPage: true,
-          viewportFraction: 0.9,
+          viewportFraction: 0.92,
           aspectRatio: 16 / 9,
         ),
         items: controller.promoImages.map((url) {
@@ -180,39 +159,12 @@ class HomePage extends GetView<HomeController> {
                 margin: const EdgeInsets.symmetric(horizontal: 5.0),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
+                  color: AppTheme.secondaryBackground,
                   image: DecorationImage(
                     image: NetworkImage(url),
                     fit: BoxFit.cover,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 15,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.8),
-                      ],
-                      stops: const [0.6, 1.0],
-                    ),
-                  ),
-                  alignment: Alignment.bottomLeft,
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    "Special Promo Today!",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    onError: (obj, trace) =>
+                        const AssetImage('assets/placeholder.png'),
                   ),
                 ),
               );
@@ -220,6 +172,54 @@ class HomePage extends GetView<HomeController> {
           );
         }).toList(),
       ),
+    );
+  }
+
+  Widget _buildQuickMenuSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Text(
+            "Quick Access",
+            style: GoogleFonts.poppins(
+              color: AppTheme.lightText.withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCompactMenuBtn(
+                icon: Icons.movie_creation_outlined,
+                label: "Movies",
+                onTap: controller.navigateToMovies,
+              ),
+              _buildCompactMenuBtn(
+                icon: Icons.fastfood_outlined,
+                label: "Dining",
+                onTap: controller.navigateToFood,
+              ),
+              _buildCompactMenuBtn(
+                icon: Icons.forum_outlined,
+                label: "Community",
+                onTap: controller.navigateToCommunity,
+              ),
+              _buildCompactMenuBtn(
+                icon: Icons.movie_filter_outlined,
+                label: "Rentals",
+                onTap: controller.navigateToRentals,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -236,7 +236,6 @@ class HomePage extends GetView<HomeController> {
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
             splashColor: AppTheme.primaryGold.withOpacity(0.4),
-            highlightColor: AppTheme.primaryGold.withOpacity(0.1),
             child: Container(
               width: 65,
               height: 65,
@@ -247,13 +246,6 @@ class HomePage extends GetView<HomeController> {
                   color: AppTheme.primaryGold.withOpacity(0.3),
                   width: 1,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Icon(icon, color: AppTheme.primaryGold, size: 28),
             ),
@@ -301,11 +293,12 @@ class HomePage extends GetView<HomeController> {
     );
   }
 
-  Widget _buildTrendingMoviesList() {
+  // --- LIST FILM (Horizontal) ---
+  Widget _buildMovieList(List<MovieModel> movies, {bool isRental = false}) {
     return SizedBox(
-      height: 240, // Tinggi container list
+      height: 240,
       child: Obx(() {
-        if (controller.isLoading.value && controller.trendingMovies.isEmpty) {
+        if (controller.isLoading.value && movies.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(color: AppTheme.primaryGold),
           );
@@ -313,15 +306,14 @@ class HomePage extends GetView<HomeController> {
         return ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: controller.trendingMovies.length,
+          itemCount: movies.length,
           itemBuilder: (context, index) {
-            final movie = controller.trendingMovies[index];
+            final movie = movies[index];
             return Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Poster dengan ukuran pasti agar tidak error
                   SizedBox(
                     height: 170,
                     width: 115,
@@ -333,15 +325,29 @@ class HomePage extends GetView<HomeController> {
                   const SizedBox(height: 8),
                   SizedBox(
                     width: 115,
-                    child: Text(
-                      movie.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        color: AppTheme.lightText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          movie.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            color: AppTheme.lightText,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (isRental)
+                          Text(
+                            "Rent",
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.primaryGold,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -353,98 +359,197 @@ class HomePage extends GetView<HomeController> {
     );
   }
 
-  Widget _buildPopularFoodList() {
+  // --- LIST MAKANAN (Horizontal) ---
+  Widget _buildFoodList(List<FoodModel> foods) {
     return SizedBox(
       height: 160,
       child: Obx(() {
         return ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: controller.popularFoods.length,
+          itemCount: foods.length,
           itemBuilder: (context, index) {
-            final food = controller.popularFoods[index];
-            return _buildFoodCard(food);
+            final food = foods[index];
+            return GestureDetector(
+              onTap: controller.navigateToFood,
+              child: Container(
+                width: 240,
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondaryBackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        food.image,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Container(
+                          width: 80,
+                          height: 80,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            food.category,
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.primaryGold,
+                              fontSize: 10,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            food.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.lightText,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            food.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey,
+                              fontSize: 10,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            food.price,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
         );
       }),
     );
   }
 
-  Widget _buildFoodCard(FoodModel food) {
-    return GestureDetector(
-      onTap: controller.navigateToFood,
-      child: Container(
-        width: 240,
-        margin: const EdgeInsets.only(right: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppTheme.secondaryBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-        ),
-        child: Row(
-          children: [
-            // Gambar Makanan
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                food.image,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Container(width: 80, height: 80, color: Colors.grey),
-              ),
+  // --- LIST KOMUNITAS (Horizontal Card) ---
+  Widget _buildCommunityList() {
+    return SizedBox(
+      height: 140,
+      child: Obx(() {
+        if (controller.communityPosts.isEmpty) {
+          return const Center(
+            child: Text(
+              "No discussions yet",
+              style: TextStyle(color: Colors.grey),
             ),
-            const SizedBox(width: 12),
-            // Info Makanan
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
+          );
+        }
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: controller.communityPosts.length,
+          itemBuilder: (context, index) {
+            final post = controller.communityPosts[index];
+            return GestureDetector(
+              onTap: controller.navigateToCommunity,
+              child: Container(
+                width: 280,
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondaryBackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.primaryGold.withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: AppTheme.primaryGold,
+                          child: const Icon(
+                            Icons.person,
+                            size: 16,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            post.userName,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.primaryGold,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryGold.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      food.category,
-                      style: GoogleFonts.poppins(
-                        color: AppTheme.primaryGold,
-                        fontSize: 10,
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: Text(
+                        post.text,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    food.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      color: AppTheme.lightText,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.thumb_up_alt_outlined,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${post.likes} Likes",
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    food.price,
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      }),
     );
   }
 

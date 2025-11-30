@@ -3,33 +3,45 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../core/utils/app_routes.dart';
 import '../../data/models/movie_model.dart';
+import '../../data/models/community_model.dart';
 import '../../data/providers/tmdb_provider.dart';
-import '../../data/models/food_model.dart'; // Import model makanan
+import '../../data/models/food_model.dart';
 
 class HomeController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Kita butuh provider lagi untuk ambil data trending
   final TmdbProvider _tmdbProvider = Get.find<TmdbProvider>();
 
   final userName = "Guest".obs;
   final isLoading = true.obs;
 
-  // Data List untuk UI
-  final trendingMovies = <MovieModel>[].obs;
-  final popularFoods = <FoodModel>[].obs;
+  // --- SUPABASE URL ---
+  final String _imageBaseUrl =
+      'https://lyypmixrenhvidobfqaw.supabase.co/storage/v1/object/public/products/';
 
-  // Gambar Carousel Utama (Promo Statis)
-  final promoImages = [
-    "https://image.tmdb.org/t/p/w1280/8pjWz2lt2xRcLgKCFwL6E0aKsc.jpg",
-    "https://image.tmdb.org/t/p/w1280/qrGtVFBI1hoSJma8hdE3h4dy13s.jpg",
-    "https://image.tmdb.org/t/p/w1280/pRmF6VBsRnvWCb6tXWYnZa4JRock.jpg",
-  ].obs;
+  // --- DATA LIST UNTUK UI (RxList agar reaktif) ---
+  // Kita hapus duplikasi dan gunakan nama variabel yang konsisten dengan HomePage
+  final nowPlayingMovies = <MovieModel>[].obs; // Pengganti trendingMovies
+  final topRatedMovies = <MovieModel>[].obs;
+  final upcomingMovies = <MovieModel>[].obs;
+  final rentalMovies = <MovieModel>[].obs;
+  final popularFoods = <FoodModel>[].obs;
+  final communityPosts = <CommunityModel>[].obs;
+
+  // Gambar Carousel Utama
+  late final RxList<String> promoImages;
 
   @override
   void onInit() {
     super.onInit();
+    // Inisialisasi promo images
+    promoImages = [
+      "${_imageBaseUrl}banner1.jpg",
+      "${_imageBaseUrl}banner2.jpg",
+      "${_imageBaseUrl}banner3.jpg",
+    ].obs;
+
     _loadUserName();
-    _fetchDashboardData(); // Ambil data saat init
+    _fetchDashboardData();
   }
 
   void _loadUserName() {
@@ -43,38 +55,63 @@ class HomeController extends GetxController {
     try {
       isLoading.value = true;
 
-      // 1. Ambil Film Trending (Now Playing) - Cuma ambil 5 teratas
-      final movies = await _tmdbProvider.getNowPlayingMovies();
-      trendingMovies.value = movies.take(5).toList();
+      // 1. Fetch Data Film dari API
+      final results = await Future.wait([
+        _tmdbProvider.getNowPlayingMovies(),
+        _tmdbProvider.getTopRatedMovies(),
+        _tmdbProvider.getUpcomingMovies(),
+      ]);
 
-      // 2. Isi Data Dummy Makanan Populer
+      // Assign data ke variabel RxList
+      nowPlayingMovies.value = results[0].take(5).toList();
+      topRatedMovies.value = results[1].take(5).toList();
+      upcomingMovies.value = results[2].take(5).toList();
+
+      // Untuk Rental, ambil dari Top Rated dan acak sedikit
+      var rentals = List<MovieModel>.from(results[1]);
+      rentals.shuffle();
+      rentalMovies.value = rentals.take(5).toList();
+
+      // 2. Fetch Data Komunitas (Review) dari API
+      if (nowPlayingMovies.isNotEmpty) {
+        final firstMovieId = nowPlayingMovies[0].id;
+        final reviews = await _tmdbProvider.getMovieReviews(firstMovieId);
+        communityPosts.value = reviews;
+      }
+
+      // 3. Data Makanan
       popularFoods.value = [
         FoodModel(
-          name: "Caramel Popcorn",
-          price: "Rp 45.000",
+          name: "Popcorn Caramel",
+          price: "Rp 50.000",
           category: "Snack",
-          image:
-              "https://images.unsplash.com/photo-1578849278619-e73505e9610f?q=80&w=500&auto=format&fit=crop",
-          rating: 4.8,
-          description: "Popcorn renyah dengan lapisan karamel manis premium.",
+          rating: 4.9,
+          description: "Popcorn klasik bioskop.",
+          image: "${_imageBaseUrl}popcorn.jpg",
         ),
         FoodModel(
-          name: "Coca Cola Large",
-          price: "Rp 25.000",
+          name: "Coca Cola",
+          price: "Rp 30.000",
           category: "Drink",
-          image:
-              "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop",
-          rating: 4.9,
-          description: "Kesegaran soda klasik dalam ukuran besar.",
+          rating: 4.8,
+          description: "Minuman bersoda dingin.",
+          image: "${_imageBaseUrl}coke.jpg",
+        ),
+        FoodModel(
+          name: "Combo Couple",
+          price: "Rp 95.000",
+          category: "Combo",
+          rating: 5.0,
+          description: "Paket hemat berdua.",
+          image: "${_imageBaseUrl}combo_solo.jpg",
         ),
         FoodModel(
           name: "Nachos Cheese",
           price: "Rp 50.000",
           category: "Snack",
-          image:
-              "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=500&auto=format&fit=crop",
           rating: 4.5,
-          description: "Keripik tortilla jagung dengan saus keju hangat.",
+          description: "Tortilla dengan keju.",
+          image: "${_imageBaseUrl}cheese_balls.jpg",
         ),
       ];
     } catch (e) {
@@ -88,8 +125,9 @@ class HomeController extends GetxController {
   void navigateToMovies() => Get.toNamed(AppRoutes.movies);
   void navigateToFood() => Get.toNamed(AppRoutes.food);
   void navigateToProfile() => Get.toNamed(AppRoutes.profile);
+  void navigateToRentals() => Get.toNamed(AppRoutes.rentals);
+  void navigateToCommunity() => Get.toNamed(AppRoutes.community);
 
-  // Navigasi Spesifik ke Detail Film
   void goToMovieDetail(int id) {
     Get.toNamed(AppRoutes.movieDetail, arguments: id);
   }
@@ -97,10 +135,9 @@ class HomeController extends GetxController {
   void showFeatureNotReady(String title) {
     Get.snackbar(
       "Info",
-      "$title is under development",
+      "$title is coming soon!",
       snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(20),
-      backgroundColor: Colors.black.withOpacity(0.8),
+      backgroundColor: Colors.black54,
       colorText: Colors.white,
     );
   }
