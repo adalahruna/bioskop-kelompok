@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Untuk Timestamp
 import '../models/movie_model.dart';
 import '../models/movie_detail_model.dart';
 import '../models/cast_model.dart';
@@ -11,7 +11,7 @@ class TmdbProvider {
   final String _apiKey = ApiConstants.tmdbApiKey;
   final String _baseUrl = ApiConstants.tmdbBaseUrl;
 
-  // --- HELPER FUNCTION ---
+  // Helper function untuk mengambil list film standar
   Future<List<MovieModel>> _fetchMovies(String endpoint) async {
     try {
       final response = await _dio.get(
@@ -123,6 +123,18 @@ class TmdbProvider {
 
       // Ambil 5 review teratas dan konversi ke model CommunityModel kita
       return results.take(5).map((json) {
+        // Ambil Avatar Path dari TMDB (kadang ada, kadang null)
+        String avatarPath = json['author_details']['avatar_path'] ?? '';
+
+        // Fix URL Avatar TMDB (kadang formatnya aneh, ada yg path doang, ada yg full url)
+        if (avatarPath.isNotEmpty) {
+          if (!avatarPath.startsWith('http')) {
+            avatarPath = 'https://image.tmdb.org/t/p/w200$avatarPath';
+          } else if (avatarPath.startsWith('/http')) {
+            avatarPath = avatarPath.substring(1); // Hapus slash depan jika ada
+          }
+        }
+
         return CommunityModel(
           id: json['id'] ?? '',
           userName: json['author'] ?? 'TMDB Reviewer',
@@ -132,6 +144,7 @@ class TmdbProvider {
           timestamp: Timestamp.fromDate(
             DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
           ),
+          photoUrl: avatarPath, // Gunakan URL avatar yang sudah difix
           likes: 0,
         );
       }).toList();

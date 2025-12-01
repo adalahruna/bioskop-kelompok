@@ -130,11 +130,31 @@ class CommunityController extends GetxController {
     }
 
     try {
+      // Default value jika data tidak ditemukan
       String senderName = user.email!.split('@')[0];
+      String senderPhoto = "";
 
+      // 1. Ambil Data Profil Terbaru dari Firestore 'users'
+      // Menggunakan GetOptions source server agar data selalu fresh
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get(const GetOptions(source: Source.server));
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        if (userData != null) {
+          senderName = userData['name'] ?? senderName;
+          // Ambil foto profil (pastikan key 'photoUrl' sesuai dengan di ProfileController)
+          senderPhoto = userData['photoUrl'] ?? "";
+        }
+      }
+
+      // 2. Simpan Komentar dengan Data Profil Asli
       final commentData = {
         'userName': senderName,
         'userId': user.uid,
+        'userPhoto': senderPhoto, // Simpan URL foto agar muncul di chat bubble
         'text': messageController.text.trim(),
         'timestamp': FieldValue.serverTimestamp(),
         'likes': 0,

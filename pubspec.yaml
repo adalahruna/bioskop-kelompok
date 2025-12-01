@@ -49,6 +49,7 @@ dev_dependencies:
   dio: ^5.9.0
   supabase_flutter: ^2.10.3  # Untuk koneksi ke Supabase
   image_picker: ^1.2.1      # Untuk ambil foto dari galeri
+  google_sign_in: ^6.1.6
 
 
   # The "flutter_lints" package below contains a set of recommended lints to

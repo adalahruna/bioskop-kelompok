@@ -579,7 +579,7 @@ class HomePage extends GetView<HomeController> {
         ),
         const SizedBox(height: 4),
         Text(
-          "© 2025 Noir Entertainment Group",
+          "© Kelompok 8",
           style: GoogleFonts.poppins(
             color: Colors.grey.withOpacity(0.5),
             fontSize: 10,

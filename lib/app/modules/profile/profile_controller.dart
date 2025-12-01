@@ -25,7 +25,6 @@ class ProfileController extends GetxController {
   final myFoodOrders = <Map<String, dynamic>>[].obs;
   final myRentals = <Map<String, dynamic>>[].obs;
 
-  // State Loading
   final isLoading = true.obs;
   final isUploading = false.obs;
 
@@ -35,11 +34,9 @@ class ProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Panggil fungsi wrapper untuk load semua data
     loadAllData();
   }
 
-  // Wrapper agar loading teratur dan tidak stuck
   void loadAllData() async {
     isLoading.value = true;
     await loadUserProfile();
@@ -48,12 +45,11 @@ class ProfileController extends GetxController {
   }
 
   Future<void> loadUserProfile() async {
-    User? user = _auth.currentUser; // Ini referensi ke Firebase User
+    User? user = _auth.currentUser;
     if (user != null) {
       userEmail.value = user.email ?? "";
 
       try {
-        // Mendengarkan perubahan data user secara real-time
         _firestore.collection('users').doc(user.uid).snapshots().listen((doc) {
           if (doc.exists && doc.data() != null) {
             var data = doc.data()!;
@@ -67,15 +63,14 @@ class ProfileController extends GetxController {
     }
   }
 
-  // --- LOGIKA UPLOAD FOTO (UNIVERSAL / WEB SAFE) ---
+  // --- LOGIKA UPLOAD FOTO (FIXED WEB BLOB ISSUE) ---
   void pickAndUploadImage() async {
     final ImagePicker picker = ImagePicker();
 
-    // 1. Pilih Gambar dengan Kompresi agar ringan
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 50, // Kompres kualitas gambar jadi 50%
-      maxWidth: 500, // Resize lebar maks 500px
+      imageQuality: 50,
+      maxWidth: 500,
     );
 
     if (image == null) return;
@@ -84,18 +79,17 @@ class ProfileController extends GetxController {
     User? user = _auth.currentUser;
 
     try {
-      // 2. Baca File sebagai Bytes (Binary)
-      // Ini cara paling aman agar tidak error '_namespace'
+      // 1. Baca File sebagai Bytes
       final Uint8List imageBytes = await image.readAsBytes();
 
-      final String fileExt = image.path.split('.').last;
-      // Nama file unik pakai timestamp agar tidak cache
+      // --- PERBAIKAN DI SINI ---
+      // Jangan ambil ekstensi dari image.path karena di Web itu bentuknya Blob URL
+      // Kita paksa saja jadi .jpg agar bersih
       final String fileName =
-          '${user!.uid}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-      final String path =
-          fileName; // Langsung nama file di root bucket 'avatars'
+          '${user!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String path = 'profiles/$fileName';
 
-      // 3. Upload Binary ke Supabase (Bucket 'avatars')
+      // 2. Upload Binary ke Supabase
       await _supabase.storage
           .from('avatars')
           .uploadBinary(
@@ -103,20 +97,22 @@ class ProfileController extends GetxController {
             imageBytes,
             fileOptions: const FileOptions(
               upsert: true,
-              contentType:
-                  'image/jpeg', // Paksa content type agar dikenali browser sebagai gambar
+              contentType: 'image/jpeg',
             ),
           );
 
-      // 4. Ambil URL Publik
+      // 3. Ambil URL Publik
       final String publicUrl = _supabase.storage
           .from('avatars')
           .getPublicUrl(path);
 
-      // 5. Update Firestore dengan URL baru
+      // 4. Update Firestore
       await _firestore.collection('users').doc(user.uid).update({
         'photoUrl': publicUrl,
       });
+
+      // Update UI Lokal langsung agar terasa cepat
+      userPhotoUrl.value = publicUrl;
 
       Get.snackbar(
         "Success",
@@ -128,7 +124,7 @@ class ProfileController extends GetxController {
       print("Error upload: $e");
       Get.snackbar(
         "Error",
-        "Gagal upload foto. Pastikan Bucket 'avatars' Public & Policy diatur.",
+        "Gagal upload foto. Pastikan Bucket 'avatars' Public.",
       );
     } finally {
       isUploading.value = false;
@@ -223,7 +219,6 @@ class ProfileController extends GetxController {
           .toList();
     } catch (e) {
       print("Error loading history: $e");
-      // Jika error index, cek debug console untuk link pembuatan index Firestore
     }
   }
 
