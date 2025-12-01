@@ -7,7 +7,6 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/app_routes.dart';
 
 class BookingController extends GetxController {
-  // Data Film
   late final int movieId;
   late final String movieTitle;
   late final String posterUrl;
@@ -16,11 +15,10 @@ class BookingController extends GetxController {
   var seats = List.generate(6, (i) => List.generate(8, (j) => 0.obs)).obs;
   var selectedSeats = <List<int>>[].obs;
 
-  // --- JADWAL TAYANG (BARU) ---
+  // Jadwal
   final selectedDate = Rx<DateTime>(DateTime.now());
   final selectedTime = "".obs;
 
-  // List jam tayang statis
   final List<String> timeSlots = [
     "10:30",
     "12:00",
@@ -32,7 +30,10 @@ class BookingController extends GetxController {
   ];
 
   final double pricePerTicket = 50000.0;
-  final isLoading = false.obs;
+
+  // State Loading
+  final isLoading = false.obs; // Untuk proses checkout
+  final isLoadingSeats = false.obs; // Untuk proses load kursi
 
   @override
   void onInit() {
@@ -42,11 +43,10 @@ class BookingController extends GetxController {
     movieTitle = args['title'];
     posterUrl = args['poster'];
 
-    // Reset kursi sold secara random untuk simulasi
-    _randomizeSoldSeats();
+    // Awal load, reset semua kursi jadi available
+    _resetAllSeats();
   }
 
-  // Generate 7 hari ke depan untuk dipilih
   List<DateTime> get next7Days {
     return List.generate(
       7,
@@ -54,9 +54,7 @@ class BookingController extends GetxController {
     );
   }
 
-  // Cek apakah jam tayang sudah lewat (Realtime Validation)
   bool isTimeSlotExpired(String time) {
-    // Jika tanggal yang dipilih BUKAN hari ini, maka jam tidak expired
     final now = DateTime.now();
     if (selectedDate.value.day != now.day ||
         selectedDate.value.month != now.month ||
@@ -64,27 +62,22 @@ class BookingController extends GetxController {
       return false;
     }
 
-    // Jika HARI INI, cek jamnya
     try {
       final parts = time.split(':');
       final hour = int.parse(parts[0]);
       final minute = int.parse(parts[1]);
-
       final slotTime = DateTime(now.year, now.month, now.day, hour, minute);
-
-      // Jika waktu slot SEBELUM waktu sekarang, berarti expired
       return slotTime.isBefore(now);
     } catch (e) {
-      return true; // Default disable jika error parsing
+      return true;
     }
   }
 
   void selectDate(DateTime date) {
     selectedDate.value = date;
-    // Reset jam jika pindah tanggal agar user memilih ulang
-    selectedTime.value = "";
-    // (Opsional) Di sini bisa panggil API/Firebase untuk load kursi yang sold pada tanggal tsb
-    _randomizeSoldSeats();
+    selectedTime.value = ""; // Reset jam
+    selectedSeats.clear(); // Reset pilihan user
+    _resetAllSeats(); // Bersihkan tampilan kursi sold
   }
 
   void selectTime(String time) {
@@ -97,24 +90,82 @@ class BookingController extends GetxController {
       );
       return;
     }
+
     selectedTime.value = time;
+    selectedSeats.clear(); // Reset pilihan user saat ganti jam
+
+    // --- LOAD KURSI YANG SUDAH DIBOOKING ---
+    loadBookedSeats();
   }
 
-  void _randomizeSoldSeats() {
-    // Reset semua jadi 0
-    for (var row in seats) {
-      for (var seat in row) seat.value = 0;
-    }
-    selectedSeats.clear();
+  // --- LOGIKA UTAMA: CEK KETERSEDIAAN KURSI ---
+  void loadBookedSeats() async {
+    if (selectedTime.value.isEmpty) return;
 
-    // Randomize lagi (Simulasi kursi terjual berbeda tiap sesi)
-    seats[0][2].value = 2;
-    seats[0][3].value = 2;
-    // Tambah random logic lain jika mau
+    isLoadingSeats.value = true;
+    _resetAllSeats(); // Reset dulu sebelum load baru
+
+    try {
+      // 1. Konstruksi Waktu Tayang yang dipilih
+      final timeParts = selectedTime.value.split(':');
+      final targetShowTime = DateTime(
+        selectedDate.value.year,
+        selectedDate.value.month,
+        selectedDate.value.day,
+        int.parse(timeParts[0]),
+        int.parse(timeParts[1]),
+      );
+
+      // 2. Query ke Firestore: Cari tiket dengan MovieID & ShowTime yang sama
+      final snapshot = await FirebaseFirestore.instance
+          .collection('tickets')
+          .where('movieId', isEqualTo: movieId)
+          .where('showTime', isEqualTo: Timestamp.fromDate(targetShowTime))
+          .get();
+
+      // 3. Loop hasil query dan tandai kursi sebagai SOLD (2)
+      for (var doc in snapshot.docs) {
+        String bookedSeatsStr = doc['seats']; // Contoh: "A1, A2"
+        List<String> bookedList = bookedSeatsStr.split(', ');
+
+        for (String seatCode in bookedList) {
+          // Parse "A1" menjadi Row 0, Col 0
+          _markSeatAsSold(seatCode);
+        }
+      }
+    } catch (e) {
+      print("Error loading seats: $e");
+    } finally {
+      isLoadingSeats.value = false;
+    }
+  }
+
+  void _markSeatAsSold(String seatCode) {
+    if (seatCode.isEmpty) return;
+    try {
+      // seatCode[0] adalah Huruf (A-F)
+      // seatCode.substring(1) adalah Angka (1-8)
+
+      int row = seatCode.codeUnitAt(0) - 65; // 'A' ascii 65 -> jadi index 0
+      int col = int.parse(seatCode.substring(1)) - 1; // '1' -> jadi index 0
+
+      // Validasi agar tidak error array out of bound
+      if (row >= 0 && row < seats.length && col >= 0 && col < seats[0].length) {
+        seats[row][col].value = 2; // Tandai SOLD
+      }
+    } catch (e) {
+      print("Error parsing seat: $seatCode");
+    }
+  }
+
+  void _resetAllSeats() {
+    for (var row in seats) {
+      for (var seat in row) seat.value = 0; // Set semua Available
+    }
   }
 
   void toggleSeat(int row, int col) {
-    if (seats[row][col].value == 2) return;
+    if (seats[row][col].value == 2) return; // Jangan sentuh yang sold
 
     if (seats[row][col].value == 0) {
       seats[row][col].value = 1;
@@ -139,7 +190,6 @@ class BookingController extends GetxController {
   }
 
   void confirmBooking() async {
-    // Validasi Lengkap
     if (selectedTime.value.isEmpty) {
       Get.snackbar("Pilih Jadwal", "Silakan pilih jam tayang terlebih dahulu.");
       return;
@@ -159,7 +209,6 @@ class BookingController extends GetxController {
     }
 
     try {
-      // Gabungkan Tanggal & Jam untuk disimpan
       final timeParts = selectedTime.value.split(':');
       final showTime = DateTime(
         selectedDate.value.year,
@@ -176,14 +225,14 @@ class BookingController extends GetxController {
         'posterUrl': posterUrl,
         'seats': seatNumbers,
         'totalPrice': totalPrice,
-        'bookingDate': FieldValue.serverTimestamp(), // Waktu transaksi
-        'showTime': Timestamp.fromDate(showTime), // Waktu nonton (Jadwal)
+        'bookingDate': FieldValue.serverTimestamp(),
+        'showTime': Timestamp.fromDate(showTime),
         'status': 'active',
       });
 
       Get.snackbar(
         "Berhasil!",
-        "Tiket untuk ${DateFormat('dd MMM, HH:mm').format(showTime)} berhasil dipesan.",
+        "Tiket berhasil dipesan.",
         backgroundColor: AppTheme.primaryGold,
         colorText: AppTheme.darkText,
       );
